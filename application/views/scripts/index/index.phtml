@@ -1,0 +1,46 @@
+<?php
+
+
+
+?>
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <title>CoW Atom API Demo</title>
+</head>
+
+<body style="font-family:sans-serif;">
+   <div style="text-align:center;">
+      <h1>Moo!</h1>
+      <div style="padding:10px;">
+	 <img src="http://www.wpclipart.com/travel/US_Road_Signs/warning/cow_crossing.png" alt="Cow" />
+      </div>
+      <div style="margin-right:auto; margin-left:auto; text-align:center; width:60%; ">
+	 <form method="get" action="../search/ncs-atom">
+	    <div style="display:table; width:60%; margin-right:auto; margin-left:auto; text-align:center; background-color:#EDEDED; padding:5px;">
+	       <div style="display:table-row;">
+		  <div style="display:table-cell;">
+		     Enter a search term:
+		  </div>
+		  <div style="display:table-cell;">
+		     <input name="q" type="text" size="50" />
+		  </div>
+	       </div>
+	       <div style="display:table-row;">
+		  <div style="display:table-cell;">
+		    
+		  </div>
+		  <div style="display:table-cell;">
+		     <input type="submit" />
+		  </div>
+	       </div>
+	    </div>
+	 </form>
+      </div>
+      <div>
+	 <p>This demonstrates an Atom Web service for sharing results of NCS queries. No error handling is implemented yet, so this is not a production system. </p>
+   </div>
+</body>
+</html>
