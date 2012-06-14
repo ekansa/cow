@@ -311,7 +311,7 @@ if(is_array($NCSobj->results)){
 $resultString = $atomFullDoc->saveXML();
 
 
-header('Content-type: application/atom+xml', true);
+header('Content-type: application/atom+xml; charset=utf8', true);
 
 echo $resultString;
 
