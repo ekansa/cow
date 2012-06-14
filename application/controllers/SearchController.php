@@ -169,6 +169,8 @@ class SearchController extends Zend_Controller_Action
 	$output = array();
 	$output["totalNumResults"] = $NCSobj->totalNumResults;
 	$output["numReturned"] = $NCSobj->numReturned;
+	$output["lastUpdated"] = $NCSobj->lastUpdated;
+	$output["HREFatom"] = $NCSobj->AtomRequestURI;
 	$output["NCSrequest"] = $NCSobj->NCSrequestURL;
 	$output["existingFilters"] = $NCSobj->existingFilters;
 	$output["facets"] = $NCSobj->facets;
@@ -179,6 +181,52 @@ class SearchController extends Zend_Controller_Action
 	//echo $NCSobj->NCSrequestURL;
    }
    
+
+
+
+   public function cowFacetsAtomAction(){
+	
+	$requestParams =  $this->_request->getParams();
+	$requestURI = $this->_request->getRequestUri();
+	
+	Zend_Loader::loadClass('NCSfacetedSearch'); //class to get schema information
+	Zend_Loader::loadClass('SchemaNCScow'); //class to get schema information
+	$SchemaNCScow = new SchemaNCScow;
+	$SchemaNCScow->getXSD();
+	$SchemaNCScow->getFieldList();
+	if($SchemaNCScow->xsdString != false){
+	    $SchemaNCScow->getXSDelements();
+	    $SchemaNCScow->parseXSD();
+	}
+	if(is_array($SchemaNCScow->elements) && $SchemaNCScow->fieldListXML != false){
+	    $SchemaNCScow->parseFieldList();
+	}
+	
+	$NCSobj = new NCSfacetedSearch;
+	$NCSobj->requestParams = $requestParams;
+	$NCSobj->requestURI = $requestURI;
+	$NCSobj->schemaToFacetsArray = $SchemaNCScow->elements;
+	$NCSobj->schemaArray = $SchemaNCScow->schema;
+	$NCSobj->prepNCSsearch();
+	$NCSobj->NCSsearch();
+	$NCSobj->parseXMLnumbers($NCSobj->NCSresponse);
+	$NCSobj->parseXMLfacets($NCSobj->NCSresponse);
+	$NCSobj->parseXMLresults($NCSobj->NCSresponse);
+	$NCSobj->describeExistingFilters();
+	
+	$this->view->NCSobj = $NCSobj;
+	
+   }
+   
+
+
+
+
+
+
+
+
+
    
    
 }

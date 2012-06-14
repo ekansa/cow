@@ -1,0 +1,319 @@
+<?php
+
+
+
+
+// the number of results per page. Note: the actual number of results per page is set in the controller as an argument to the solr query.
+// the resulstPerPage variable helps us calculate the link and opensearch elements
+$NCSobj = $this->NCSobj;
+$resultsPerPage = $NCSobj->numPerPage;
+$requestParams = $NCSobj->requestParams;
+
+
+$host = "http://".$_SERVER["SERVER_NAME"];
+
+
+
+
+
+$atomFullDoc = new DOMDocument("1.0", "utf-8");
+	
+$root = $atomFullDoc->createElementNS("http://www.w3.org/2005/Atom", "feed");
+	
+// add newlines and indent the output - this is at least useful for debugging and making the output easier to read
+$atomFullDoc->formatOutput = true;
+	
+$root->setAttribute("xmlns:dc", "http://purl.org/dc/elements/1.1/");
+$root->setAttribute("xmlns:opensearch", "http://a9.com/-/spec/opensearch/1.1/");
+	
+$atomFullDoc->appendChild($root);
+
+
+// Feed Title
+$feedTitle = $atomFullDoc->createElement("title");
+$feedTitleText = $atomFullDoc->createTextNode("CoW Query Results");
+$feedTitle->appendChild($feedTitleText);
+$root->appendChild($feedTitle);
+
+
+// Prepare the feed's subtitle
+$offset = $NCSobj->offset;
+$numFound = $NCSobj->totalNumResults;
+$resultsPerPage = $NCSobj->numPerPage;
+
+// Display the number of items found and handle paging. 
+$first = $offset + 1;
+$last = $offset + $resultsPerPage;
+
+// make sure the last page, which will usually contain fewer than 10 items, displays the correct number of items.
+if ($numFound < $last) {
+   $subTitleText = 'Items ' . $first . ' to ' . $numFound . ' out of ' . $numFound . ' items.'; 
+} else {
+   $subTitleText = 'Items ' . $first . ' to ' . $last . ' out of ' . $numFound . ' items.';
+}
+
+if(count($NCSobj->existingFilters)<1){
+   $subTitleText .= " (Listing whole collection, search results not filtered)";
+}
+else{
+   $subTitleText .= " Filtered by: ";
+   $i = 1;
+   foreach($NCSobj->existingFilters as $filter){
+      
+      if($i>1){
+	 $subTitleText .= "; ";
+      }
+      
+      $subTitleText .= "($i) ".$filter["displayLabel"]." = ".$filter["value"];
+      
+      $i++;
+   }
+}
+
+
+$feedSubtitle = $atomFullDoc->createElement("subtitle");
+$feedSubtitleText = $atomFullDoc->createTextNode($subTitleText);
+$feedSubtitle->appendChild($feedSubtitleText);
+$root->appendChild($feedSubtitle);
+
+
+// Feed updated element (as opposed to the entry updated element)
+$feedUpdated = $atomFullDoc->createElement("updated");
+$updatedTime = $NCSobj->lastUpdated;
+// Retrieve the current date and time. Format it in RFC 3339 format. Store it in a text node 
+$feedUpdatedText = $atomFullDoc->createTextNode(date("Y-m-d\TH:i:s\-07:00", strtotime($updatedTime)));
+// Append the text node the updated element
+$feedUpdated->appendChild($feedUpdatedText);
+// Append the updated node to the root element
+$root->appendChild($feedUpdated);
+
+$totalResults = $atomFullDoc->createElement('opensearch:totalResults');
+$totalResultsText = $atomFullDoc->createTextNode($numFound);
+$totalResults->appendChild($totalResultsText);
+$root->appendChild($totalResults);
+
+$startIndex = $atomFullDoc->createElement('opensearch:startIndex');
+$startIndexText = $atomFullDoc->createTextNode($first);
+$startIndex->appendChild($startIndexText);
+$root->appendChild($startIndex);
+
+$itemsPerPage = $atomFullDoc->createElement('opensearch:itemsPerPage');
+$itemsPerPageText = $atomFullDoc->createTextNode($resultsPerPage);
+$itemsPerPage->appendChild($itemsPerPageText);
+$root->appendChild($itemsPerPage);
+
+
+$linkURI = $NCSobj->AtomRequestURI;
+
+// feed (self) link element
+$feedLink = $atomFullDoc->createElement("link");
+$feedLink->setAttribute("rel", "self");
+$feedLink->setAttribute("href", $linkURI);
+$root->appendChild($feedLink);
+
+// feed license link element
+$feedLink = $atomFullDoc->createElement("link");
+$feedLink->setAttribute("rel", "license");
+$feedLink->setAttribute("type", "text/html");
+$feedLink->setAttribute("href", "http://creativecommons.org/licenses/by/3.0/");
+$root->appendChild($feedLink);
+
+// feed license link element
+$feedLink = $atomFullDoc->createElement("link");
+$feedLink->setAttribute("rel", "alternate");
+$feedLink->setAttribute("type", "application/xml");
+$feedLink->setAttribute("title", "NCS Request");
+$feedLink->setAttribute("href", $NCSobj->NCSrequestURL);
+$root->appendChild($feedLink);
+
+$feedLink = $atomFullDoc->createElement("link");
+$feedLink->setAttribute("rel", "alternate");
+$feedLink->setAttribute("type", "application/json");
+$feedLink->setAttribute("title", "JSON representation for this resource");
+$feedLink->setAttribute("href", $NCSobj->JSONrequestURI);
+$root->appendChild($feedLink);
+
+
+//prepare the first link
+$feedFirstLink = $atomFullDoc->createElement("link");
+$feedFirstLink->setAttribute("rel", "first");
+// remove any existing page number
+$firstURI = preg_replace('/(\?|&)page=\d*/', '', $linkURI);
+// append a '(?|&)page=1'
+if (strpos($firstURI,'?')) {
+    $firstURI = $firstURI . '&page=1';
+} else {
+    $firstURI = $firstURI . '?page=1';
+}
+
+$feedFirstLink->setAttribute("href", $firstURI);
+$root->appendChild($feedFirstLink);
+//echo $firstURI;
+//exit;
+
+
+
+// create last link
+$feedLastLink = $atomFullDoc->createElement('link');
+$feedLastLink->setAttribute('rel', 'last');
+
+
+$lastPage = $NCSobj->lastPage;
+$lastURI = preg_replace('/(\?|&)page=\d*/', '', $linkURI); // remove any page number from the URI so we can replace it with the last page.
+if (strpos($lastURI,'?')) {
+    if($lastPage>0){
+      $lastURI = $lastURI . '&page=' . $lastPage;
+    }
+} else {
+   if($lastPage>0){
+      $lastURI = $lastURI . '?page=' . $lastPage;
+   }
+}
+
+$feedLastLink->setAttribute('href', $lastURI);
+
+$root->appendChild($feedLastLink);
+
+
+
+// get the page number from the controller; we'll use this to create the 'previous' and 'next' links
+$page = $NCSobj->currentPage;
+
+// if there is no page number in the URI, we're on page 1, so set page number accrordingly
+if (!$page) {
+    $page = 1;
+}
+
+// update the linkURI so the previous and next links will be correct
+if (strpos($linkURI,'?')) {
+    $linkURI = $linkURI . '&page=1';
+} else {
+    $linkURI = $linkURI . '?page=1';
+}
+
+
+// create previous link
+if ($NCSobj->prevPage != false) {
+    $previous = $NCSobj->prevPage;
+    $previousURI = preg_replace('/page=\d*/', 'page=' . $previous , $linkURI);
+    //echo $previousURI;
+    $previousLink = $atomFullDoc->createElement('link');
+    $previousLink->setAttribute('rel', 'previous');
+    $previousLink->setAttribute('href', $previousURI);
+    $root->appendChild($previousLink);    
+}
+
+// create next link
+//get page number and add 1; check to see that page + 1 is not greater than $lastPage
+if ($NCSobj->nextPage != false) {
+    $next = $NCSobj->nextPage;
+    $nextURI = preg_replace('/page=\d*/', 'page=' . $next , $linkURI);
+    $nextLink = $atomFullDoc->createElement('link');
+    $nextLink->setAttribute('rel', 'next');
+    $nextLink->setAttribute('href', $nextURI);
+    $root->appendChild($nextLink);
+}
+
+$feedId = $atomFullDoc->createElement("id");
+$feedIdText = $atomFullDoc->createTextNode($linkURI);
+$feedId->appendChild($feedIdText);
+$root->appendChild($feedId);
+
+$updated = false;
+if(is_array($NCSobj->results)){
+   foreach($NCSobj->results as $actResult){
+      $entry = $atomFullDoc->createElement("entry");
+      $entryTitle = $atomFullDoc->createElement("title");
+      
+      if(isset($actResult["general"]["title"]["value"])){
+	 $entryTitleText = $atomFullDoc->createTextNode($actResult["general"]["title"]["value"]);
+	 if($actResult["general"]["title"]["value"] != htmlentities($actResult["general"]["title"]["value"] )){
+	    $entryTitle->setAttribute('type', 'html');
+	 }
+      }
+      else{
+	 $entryTitleText = $atomFullDoc->createTextNode("Unspecified NCS resource title");
+      }
+      $entryTitle->appendChild($entryTitleText);
+      $entry->appendChild($entryTitle);
+      
+      $entryID = $atomFullDoc->createElement("id");
+      $entryIDText = $atomFullDoc->createTextNode($actResult["general"]["url"]["value"]);
+      $entryID->appendChild($entryIDText);
+      $entry->appendChild($entryID);
+      
+      $entryLink = $atomFullDoc->createElement("link");
+      $entryLink->setAttribute('rel', 'alternate');
+      $entryLink->setAttribute('href', ($actResult["general"]["url"]["value"]));
+      $entry->appendChild($entryLink);
+      
+      if(isset($actResult["general"]["resourceType"]["value"])){
+	 $entryCat = $atomFullDoc->createElement("category");
+	 $entryCat->setAttribute('term', $actResult["general"]["resourceType"]["value"]);
+	 $entry->appendChild($entryCat);
+      }
+      
+      if(isset($actResult["general"]["topicsSubjects"]["value"])){
+	 $entryCat = $atomFullDoc->createElement("category");
+	 $entryCat->setAttribute('term', $actResult["general"]["topicsSubjects"]["value"]);
+	 $entry->appendChild($entryCat);
+      }
+      
+      /*
+      foreach($actResult["authors"] as $author){
+	 $entryAuthor = $atomFullDoc->createElement("author");
+	 $entryAuthorName = $atomFullDoc->createElement("name");
+	 $entryAuthorNameText = $atomFullDoc->createTextNode($author);
+	 $entryAuthorName->appendChild($entryAuthorNameText);
+	 $entryAuthor->appendChild($entryAuthorName);
+	 $entry->appendChild($entryAuthor);
+      }
+      
+      */
+      
+      if(isset($actResult["general"]["description"]["value"])){
+	 $entrySum = $atomFullDoc->createElement("summary");
+	 $entrySumText = $atomFullDoc->createTextNode($actResult["general"]["description"]["value"]);
+	 if($actResult["general"]["description"]["value"] != htmlentities($actResult["general"]["description"]["value"])){
+	    $entrySum->setAttribute('type', 'html');
+	 }
+	 $entrySum->appendChild($entrySumText);
+	 $entry->appendChild($entrySum);
+      }
+      
+      if(isset($actResult["authorshipRightsAccessRestrictions"]["date"]["value"])){
+	 $updated = $NCSobj->shortDateFix($actResult["authorshipRightsAccessRestrictions"]["date"]["value"]);
+      }
+      else{
+	 //use the last updated if the time is missing
+	 if(!$updated){
+	    $updated = $NCSobj->lastUpdated;
+	 }
+      }
+      
+      $updatedXML = date("Y-m-d\TH:i:s\-07:00", strtotime($updated));
+      $entryUp = $atomFullDoc->createElement("updated");
+      $entryUpText = $atomFullDoc->createTextNode($updatedXML);
+      $entryUp->appendChild($entryUpText);
+      $entry->appendChild($entryUp);
+      
+      $entryPub = $atomFullDoc->createElement("published");
+      $entryPubText = $atomFullDoc->createTextNode($updatedXML);
+      $entryPub->appendChild($entryPubText);
+      $entry->appendChild($entryPub);
+      
+      $root->appendChild($entry);
+   }
+}
+
+
+
+$resultString = $atomFullDoc->saveXML();
+
+
+header('Content-type: application/atom+xml', true);
+
+echo $resultString;
+
+
+?>

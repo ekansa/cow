@@ -7,6 +7,9 @@ Interacts with the NCS API
 
 class NCSfacetedSearch {
  
+    public $JSONrequestURI; //request uri for the current search in JSON format
+    public $AtomRequestURI; //request uri for the current search in Atom format
+    
     public $localBaseURI; //local base URI for queries
     public $requestURI; //request URI
     public $requestParams; //request parameters, send to CoW, to be translated into NCS request
@@ -115,7 +118,9 @@ class NCSfacetedSearch {
 	if(isset($requestParams["sort"])){
 	    $NCSparams["sort"] = $requestParams["sort"];
 	}
-	
+	else{
+	    $NCSparams["sortDescendingBy"] = "/key//cowItem/authorshipRightsAccessRestrictions/date";
+	}
 	
 	$this->NCSparams = $NCSparams;
     }
@@ -317,13 +322,21 @@ class NCSfacetedSearch {
     function makeLocalBaseURI(){
 	
 	$ServicePrefix = "http://".$_SERVER["SERVER_NAME"];
+	
 	if(strstr($this->requestURI, "?")){
 	    $uriX = explode("?", $this->requestURI);
 	    $ServicePrefix .= $uriX[0];
+	    $requestSuffix = "?".$uriX[1];
+	    $requestSuffix = str_replace("[", "%5B", $requestSuffix);
+	    $requestSuffix = str_replace("]", "%5D", $requestSuffix);
 	}
 	else{
 	    $ServicePrefix .= $this->requestURI;
+	    $requestSuffix = "";
 	}
+	
+	$this->JSONrequestURI = str_replace("-atom", "-json", $ServicePrefix).$requestSuffix;
+	$this->AtomRequestURI = str_replace("-json", "-atom", $ServicePrefix).$requestSuffix;
 	
 	$this->localBaseURI = $ServicePrefix;
 	return $ServicePrefix;
@@ -659,6 +672,14 @@ class NCSfacetedSearch {
 
 
 
+    //dates sometimes come through as just years. convert to mid year (to guestimate a year-month-day) to aid date calculations / sorting
+    function shortDateFix($checkDate){
+	if(strlen($checkDate) == 4){
+	    $checkDate .= "-06-15";
+	}
+	return $checkDate;
+    }
+
 
     
     function parseXMLresults($NCSresponse){
@@ -681,6 +702,25 @@ class NCSfacetedSearch {
 		    }
 		    
 		    $record = $this->queryAgainstSchema($xmlItem, $schemaArray);
+		    
+		    //a little logic for last updated
+		    if(isset($record["authorshipRightsAccessRestrictions"]["date"]["value"])){
+			$checkDate = $record["authorshipRightsAccessRestrictions"]["date"]["value"];
+			$checkDate = $this->shortDateFix($checkDate);
+			
+			if (($timestamp = strtotime($checkDate)) === false) {
+			    $calendardTest = false;
+			}
+			else{
+			    $calendardTest = true;
+			}
+			
+			if($calendardTest){
+			    if($timestamp > strtotime($this->lastUpdated)){
+				$this->lastUpdated = date("Y-m-d\TH:i:s\-07:00", $timestamp);
+			    }
+			}
+		    }
 		    
 		    $records[] = $record;
 		}
