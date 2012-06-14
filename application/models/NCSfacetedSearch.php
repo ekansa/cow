@@ -595,6 +595,7 @@ class NCSfacetedSearch {
 	unset($requestParams["controller"]);
 	unset($requestParams["action"]);
 	unset($requestParams["module"]);
+	unset($requestParams["callback"]);
 	
 	unset($requestParams["page"]);
 	unset($requestParams["sort"]);
@@ -622,6 +623,9 @@ class NCSfacetedSearch {
 		elseif(array_key_exists($key, $paramConfig)){
 		    $actFilter["displayLabel"] = $paramConfig[$key]["displayLabel"];
 		    $actFilter["hierarchy"] = $paramConfig[$key]["pathDelimiter"];
+		}
+		else{
+		    $actFilter["hierarchy"] = false;
 		}
 		
 		if($actFilter["hierarchy"] != false){

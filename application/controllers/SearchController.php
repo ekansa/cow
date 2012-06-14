@@ -176,8 +176,14 @@ class SearchController extends Zend_Controller_Action
 	$output["facets"] = $NCSobj->facets;
 	$output["results"] = $NCSobj->results;
 	
-	header('Content-Type: application/json; charset=utf8');
-	echo Zend_Json::encode($output);
+	if(!isset($requestParams["callback"])){
+	    header('Content-Type: application/json; charset=utf8');
+	    echo Zend_Json::encode($output);
+	}
+	else{
+	    header('Content-Type: application/javascript; charset=utf8');
+	    echo $requestParams["callback"]."(".Zend_Json::encode($output).");";
+	}
 	//echo $NCSobj->NCSrequestURL;
    }
    
