@@ -170,6 +170,11 @@ class SearchController extends Zend_Controller_Action
 	$output["totalNumResults"] = $NCSobj->totalNumResults;
 	$output["numReturned"] = $NCSobj->numReturned;
 	$output["lastUpdated"] = $NCSobj->lastUpdated;
+	$output["pagination"] = array("HREFfirstPage" => $NCSobj->firstPageURI,
+				      "HREFprevPage" => $NCSobj->prevPageURI,
+				      "HREFnextPage" => $NCSobj->nextPageURI,
+				      "HREFlastPage" => $NCSobj->lastPageURI
+				      );
 	$output["HREFatom"] = $NCSobj->AtomRequestURI;
 	$output["NCSrequest"] = $NCSobj->NCSrequestURL;
 	$output["existingFilters"] = $NCSobj->existingFilters;

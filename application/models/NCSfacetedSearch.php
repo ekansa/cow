@@ -35,6 +35,12 @@ class NCSfacetedSearch {
     public $nextPage;
     public $prevPage;
     
+    //JSON pagination
+    public $firstPageURI;
+    public $prevPageURI;
+    public $nextPageURI;
+    public $lastPageURI;
+    
     public $lastUpdated;
     public $results; //search results;
     
@@ -78,6 +84,11 @@ class NCSfacetedSearch {
 	$this->lastUpdated = false;
 	$this->lastPage = false;
 	
+	//set pagination to false
+	$this->firstPageURI = false;
+	$this->prevPageURI = false;
+	$this->nextPageURI = false;
+	$this->lastPageURI = false;
 	
 	$requestParams = $this->requestParams;
 	
@@ -309,6 +320,22 @@ class NCSfacetedSearch {
 		}
 		else{
 		    $this->prevPage = false;
+		}
+		
+		//make JSON pagination
+		$this->makeLocalBaseURI(); //make a local base URI to prep for constructing links to query on facets
+		$this->removeValue = false;
+		
+		$this->firstPageURI = $this->constructQueryURI("page", null);
+		
+		if($this->prevPage != false){
+		    $this->prevPageURI = $this->constructQueryURI("page", $this->prevPage);
+		}
+		if($this->nextPage != false){
+		    $this->nextPageURI = $this->constructQueryURI("page", $this->nextPage);
+		}
+		if($this->lastPage != false){
+		    $this->lastPageURI = $this->constructQueryURI("page", $this->lastPage);
 		}
 		
 	    }
