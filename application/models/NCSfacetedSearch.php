@@ -769,8 +769,9 @@ class NCSfacetedSearch {
     }
 
 
-
-    function queryAgainstSchema($xmlItem, $schemaArray){
+    //recursive function that uses the NCS schem to query against the XML result returned from a search
+    //outputs a PHP array which can later be expressed as JSON, Atom, etc.
+    function queryAgainstSchema($xmlItem, $schemaArray, $singleValue = false){
 	
 	$record = array();
 	foreach($schemaArray as $key => $subArray){
@@ -779,7 +780,22 @@ class NCSfacetedSearch {
 		if($xmlItem->xpath($subArray["xpath"])){
 		    $record[$key]["displayLabel"] = $subArray["displayLabel"];
 		    foreach($xmlItem->xpath($subArray["xpath"]) as $node){
-			$record[$key]["value"] = (string)$node;
+			
+			if(!$singleValue){
+			    $record[$key]["values"][]["value"] = (string)$node;
+			}
+			else{
+			    $record[$key]["value"] = (string)$node;
+			}
+		    }
+		    
+		    if(is_array($subArray["attributes"])){
+			$newValueArray = array();
+			foreach($record[$key]["values"] as $valArray){
+			    $valArray["attributes"] = $this->queryAgainstSchema($xmlItem, $subArray["attributes"], true);
+			    $newValueArray[] = $valArray;
+			}
+			$record[$key]["values"] = $newValueArray;
 		    }
 		}
 	    }
@@ -787,15 +803,22 @@ class NCSfacetedSearch {
 		$record[$key] = $this->queryAgainstSchema($xmlItem, $subArray["children"]);
 	    }
 	    
+	    /*
 	    if(is_array($subArray["attributes"])){
 		$record[$key]["attributes"] = $this->queryAgainstSchema($xmlItem, $subArray["attributes"]);
 	    }
-	    
+	    */
 	}
 	
 	return $record;
     }
     
+
+    //make a URI to get the NCS record for an item
+    function NCSrecordURI($recordID){
+	return self::baseURL."?verb=GetRecord&id=".$recordID;
+    }
+
 
 
 }//end class

@@ -64,7 +64,7 @@ else{
 	 $subTitleText .= "; ";
       }
       
-      $subTitleText .= "($i) ".$filter["displayLabel"]." = ".$filter["value"];
+      $subTitleText .= "($i) ".$filter["displayLabel"]." = ".$filter["values"][0]["value"];
       
       $i++;
    }
@@ -222,12 +222,15 @@ $root->appendChild($feedId);
 $updated = false;
 if(is_array($NCSobj->results)){
    foreach($NCSobj->results as $actResult){
+      
+      $NCSid = $actResult["general"]["recordID"]["values"][0]["value"];
+      
       $entry = $atomFullDoc->createElement("entry");
       $entryTitle = $atomFullDoc->createElement("title");
       
-      if(isset($actResult["general"]["title"]["value"])){
-	 $entryTitleText = $atomFullDoc->createTextNode($actResult["general"]["title"]["value"]);
-	 if($actResult["general"]["title"]["value"] != htmlentities($actResult["general"]["title"]["value"] )){
+      if(isset($actResult["general"]["title"]["values"][0]["value"])){
+	 $entryTitleText = $atomFullDoc->createTextNode($actResult["general"]["title"]["values"][0]["value"]);
+	 if($actResult["general"]["title"]["values"][0]["value"] != htmlentities($actResult["general"]["title"]["values"][0]["value"] )){
 	    $entryTitle->setAttribute('type', 'html');
 	 }
       }
@@ -238,24 +241,37 @@ if(is_array($NCSobj->results)){
       $entry->appendChild($entryTitle);
       
       $entryID = $atomFullDoc->createElement("id");
-      $entryIDText = $atomFullDoc->createTextNode($actResult["general"]["url"]["value"]);
+      $entryIDText = $atomFullDoc->createTextNode($actResult["general"]["url"]["values"][0]["value"]);
       $entryID->appendChild($entryIDText);
       $entry->appendChild($entryID);
       
+      $format = "text/html"; //cheezy default, but assuming most resources are Web pages unless stated elsewhere
+      if(isset($actResult["general"]["format"]["values"][0]["value"])){
+	 $format = $actResult["general"]["format"]["values"][0]["value"];
+      }
+      
+      
       $entryLink = $atomFullDoc->createElement("link");
       $entryLink->setAttribute('rel', 'alternate');
-      $entryLink->setAttribute('href', ($actResult["general"]["url"]["value"]));
+      //$entryLink->setAttribute("type", $format);
+      $entryLink->setAttribute('href', ($actResult["general"]["url"]["values"][0]["value"]));
       $entry->appendChild($entryLink);
       
-      if(isset($actResult["general"]["resourceType"]["value"])){
+      $entryLink = $atomFullDoc->createElement("link");
+      $entryLink->setAttribute('rel', 'describedby'); // See: http://www.iana.org/assignments/link-relations/link-relations.xml
+      $entryLink->setAttribute("type", "application/xml");
+      $entryLink->setAttribute('href', $NCSobj->NCSrecordURI($NCSid)); //generate a link to the NCS metadata record
+      $entry->appendChild($entryLink);
+      
+      if(isset($actResult["general"]["resourceType"]["values"][0]["value"])){
 	 $entryCat = $atomFullDoc->createElement("category");
-	 $entryCat->setAttribute('term', $actResult["general"]["resourceType"]["value"]);
+	 $entryCat->setAttribute('term', $actResult["general"]["resourceType"]["values"][0]["value"]);
 	 $entry->appendChild($entryCat);
       }
       
-      if(isset($actResult["general"]["topicsSubjects"]["value"])){
+      if(isset($actResult["general"]["topicsSubjects"]["values"][0]["value"])){
 	 $entryCat = $atomFullDoc->createElement("category");
-	 $entryCat->setAttribute('term', $actResult["general"]["topicsSubjects"]["value"]);
+	 $entryCat->setAttribute('term', $actResult["general"]["topicsSubjects"]["values"][0]["value"]);
 	 $entry->appendChild($entryCat);
       }
       
@@ -271,18 +287,18 @@ if(is_array($NCSobj->results)){
       
       */
       
-      if(isset($actResult["general"]["description"]["value"])){
+      if(isset($actResult["general"]["description"]["values"][0]["value"])){
 	 $entrySum = $atomFullDoc->createElement("summary");
-	 $entrySumText = $atomFullDoc->createTextNode($actResult["general"]["description"]["value"]);
-	 if($actResult["general"]["description"]["value"] != htmlentities($actResult["general"]["description"]["value"])){
+	 $entrySumText = $atomFullDoc->createTextNode($actResult["general"]["description"]["values"][0]["value"]);
+	 if($actResult["general"]["description"]["values"][0]["value"] != htmlentities($actResult["general"]["description"]["values"][0]["value"])){
 	    $entrySum->setAttribute('type', 'html');
 	 }
 	 $entrySum->appendChild($entrySumText);
 	 $entry->appendChild($entrySum);
       }
       
-      if(isset($actResult["authorshipRightsAccessRestrictions"]["date"]["value"])){
-	 $updated = $NCSobj->shortDateFix($actResult["authorshipRightsAccessRestrictions"]["date"]["value"]);
+      if(isset($actResult["authorshipRightsAccessRestrictions"]["date"]["values"][0]["value"])){
+	 $updated = $NCSobj->shortDateFix($actResult["authorshipRightsAccessRestrictions"]["date"]["values"][0]["value"]);
       }
       else{
 	 //use the last updated if the time is missing
