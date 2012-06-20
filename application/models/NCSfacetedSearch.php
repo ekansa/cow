@@ -30,21 +30,22 @@ class NCSfacetedSearch {
     public $offset;
     public $numPerPage;
     
-    public $currentPage;
+    //Pagination, integer numbers
+    public $currentPage; 
     public $lastPage;
     public $nextPage;
     public $prevPage;
     
-    //JSON pagination
+    //JSON pagination, links
     public $firstPageURI;
     public $prevPageURI;
     public $nextPageURI;
     public $lastPageURI;
     
-    public $lastUpdated;
+    public $lastUpdated; //last updated time
     public $results; //search results;
     
-    
+    public $displayAllResultMetadata; //show metadata elements marked in the NCS schema as not public
     
     //const baseURL = "http://nsdl.org/dds-search";
     const baseURL = "http://cow.lhs.berkeley.edu/ncs/services/ddsws1-1";
@@ -89,6 +90,9 @@ class NCSfacetedSearch {
 	$this->prevPageURI = false;
 	$this->nextPageURI = false;
 	$this->lastPageURI = false;
+	
+	//default to only metadata elements marked as public
+	$this->displayAllResultMetadata = false;
 	
 	$requestParams = $this->requestParams;
 	
@@ -777,15 +781,20 @@ class NCSfacetedSearch {
 	foreach($schemaArray as $key => $subArray){
 	    
 	    if(!$subArray["children"]){
-		if($xmlItem->xpath($subArray["xpath"])){
+		$public = true;
+		if(isset($subArray["public"]) && !$this->displayAllResultMetadata){ //if we're not displaying all metadata elements, check if public
+		    $public = $subArray["public"];
+		}
+		
+		if($xmlItem->xpath($subArray["xpath"]) && $public){
 		    $record[$key]["displayLabel"] = $subArray["displayLabel"];
 		    foreach($xmlItem->xpath($subArray["xpath"]) as $node){
 			
 			if(!$singleValue){
-			    $record[$key]["values"][]["value"] = (string)$node;
+			    $record[$key]["values"][]["value"] = (string)$node; //values can be an array, as when querying XML elements
 			}
 			else{
-			    $record[$key]["value"] = (string)$node;
+			    $record[$key]["value"] = (string)$node; //value not in an array, as XML attribute
 			}
 		    }
 		    

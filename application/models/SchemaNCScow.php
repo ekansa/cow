@@ -7,7 +7,7 @@ Gets NCS metadata schema description, use it for making human readable search re
 
 class SchemaNCScow {
  
-    const schemaURL = "http://cow.lhs.berkeley.edu/metadata/cowItem/0.1/cowItem.xsd"; // url of the schema
+    const schemaURL = "http://cow.lhs.berkeley.edu/metadata/cowItem/0.3/cowItemType.xsd"; // url of the schema
     const fieldListURL = "http://cow.lhs.berkeley.edu/ncs/services/ddsws1-1?verb=ListFields"; // url of the field List
     
     const cacheLife = 90000; //25 hour cache life. because why not
@@ -90,6 +90,33 @@ class SchemaNCScow {
 			    $elementType = $node->nodeValue;
 			}
 			
+			$elementPublic = false;
+			$query = "@cowconf:public";
+			$resultE = $xpath->query($query, $elementNode);
+			foreach($resultE as $node){
+			    $elementPublic = $node->nodeValue;
+			    if($elementPublic == "1"){
+				$elementPublic = true;
+			    }
+			    else{
+				$elementPublic = false;
+			    }
+			}
+			
+			$elementFacet = false;
+			$query = "@cowconf:makeFacet";
+			$resultF = $xpath->query($query, $elementNode);
+			foreach($resultF as $node){
+			    $elementFacet = $node->nodeValue;
+			    if($elementFacet == "1"){
+				$elementFacet = true;
+			    }
+			    else{
+				$elementFacet = false;
+			    }
+			}
+			
+			
 			$newPath = $parPath."/".self::cowNSprefix.":".$elementName;
 			//$newPath = $parPath."/".$elementName;
 			
@@ -108,6 +135,8 @@ class SchemaNCScow {
 			$actSchema[$elementName] = array("element" => $elementName,
 							   "type" => $elementType,
 							   "displayLabel" => $elementLabel,
+							   "public" => $elementPublic,
+							   "makeFacet" => $elementFacet,
 							   "xpath" => $newPath,
 							   "children" => $childSchema,
 							   "attributes" => $attributes
@@ -160,82 +189,6 @@ class SchemaNCScow {
 	}
 	return $actSchema;
     }
-    
-    
-    
-    //read the XSD document, make an array schema
-    function OLDparseXSD(){
-	
-	$xml = new DOMDocument();
-	$xml->loadXML($this->xsdString);
-	$xpath = new DOMXPath($xml);
-	foreach($this->XSDnameSpaces as $prefix => $uri){
-	    $xpath->registerNamespace($prefix, $uri); //get those namespaces registered!
-	}
-	
-	$schema = array();
-	
-	$query = "//xs:complexType[@name = 'cowItemType']";
-	
-	
-	$query = "//xs:complexType/@name";
-	$result = $xpath->query($query, $xml);
-	foreach($result as $complexNode){
-	    
-	    $parentName = $complexNode->nodeValue;
-	    //$parentName = str_replace("Type", "", $parentName);
-	    
-	    $query = "..//xs:element";
-	    $result = $xpath->query($query, $complexNode);
-	    foreach($result as $elementNode){
-		$actElement = array();
-		$query = "@name";
-		$elementName = false;
-		$resultB = $xpath->query($query, $elementNode);
-		foreach($resultB as $node){
-		    //$actElement["elementName"] = $node->nodeValue;
-		    $elementName = $node->nodeValue;
-		}    
-		
-		$elementLabel = false;
-		$query = "@cowconf:label";
-		$resultC = $xpath->query($query, $elementNode);
-		foreach($resultC as $node){
-		    //$actElement["label"] = $node->nodeValue;
-		    $elementLabel = $node->nodeValue;
-		}
-		
-		
-		$elementType = false;
-		$query = "@type";
-		$resultD = $xpath->query($query, $elementNode);
-		foreach($resultD as $node){
-		    $elementType = $node->nodeValue;
-		}
-		
-		//$elements[] = $actElement;
-		if($elementName != false && $elementLabel != false && $parentName !=false){
-		    
-		    $schema[] = array(
-						"element" => $elementName,
-						"parentElement" => $parentName,
-						"type" => $elementType,
-						"label" => $elementLabel);
-		}
-	    }
-	    
-	}
-	
-	$this->schema = $schema;
-    }//end function
-    
-    
-    
-    
-    
-    
-    
-    
     
     
     
