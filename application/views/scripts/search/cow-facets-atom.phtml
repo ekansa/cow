@@ -250,13 +250,35 @@ if(is_array($NCSobj->results)){
 	 $format = $actResult["general"]["format"]["values"][0]["value"];
       }
       
-      
+      //link to the item itself
       $entryLink = $atomFullDoc->createElement("link");
       $entryLink->setAttribute('rel', 'alternate');
-      //$entryLink->setAttribute("type", $format);
+      $entryLink->setAttribute("type", $format);
       $entryLink->setAttribute('href', ($actResult["general"]["url"]["values"][0]["value"]));
       $entry->appendChild($entryLink);
       
+      //links to related items
+      if(isset($actResult["general"]["relatedUrl"]["values"])){
+	 foreach($actResult["general"]["relatedUrl"]["values"] as $relLink){
+	    $linkRel = "related"; //default linking relation for related resources
+	    if(isset($relLink["attributes"]["kind"]["value"])){
+	       if($relLink["attributes"]["kind"]["value"] == "Is part of"){
+		  $linkRel = "collection"; //Map to IANA link relation, see http://www.iana.org/assignments/link-relations/link-relations.xml
+	       }
+	    }
+	    
+	    $entryLink = $atomFullDoc->createElement("link");
+	    $entryLink->setAttribute('rel', $linkRel);
+	    //$entryLink->setAttribute("type", $format);
+	    if(isset($relLink["attributes"]["title"]["value"])){
+	       $entryLink->setAttribute('title', $relLink["attributes"]["title"]["value"]);
+	    }
+	    $entryLink->setAttribute('href', ($relLink["value"]));
+	    $entry->appendChild($entryLink);
+	 }
+      }
+      
+      //link relation to the metadata description
       $entryLink = $atomFullDoc->createElement("link");
       $entryLink->setAttribute('rel', 'describedby'); // See: http://www.iana.org/assignments/link-relations/link-relations.xml
       $entryLink->setAttribute("type", "application/xml");
