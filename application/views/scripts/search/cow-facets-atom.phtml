@@ -297,8 +297,24 @@ if(is_array($NCSobj->results)){
 	 $entry->appendChild($entryCat);
       }
       
-      /*
-      foreach($actResult["authors"] as $author){
+      //authors are required for a valid Atom feed. Get author information, or default to an unknown author
+      $authors = array();
+      if(isset($actResult["authorshipRightsAccessRestrictions"]["authorContact"]["contributors"]["person"]["values"])){
+	 foreach($actResult["authorshipRightsAccessRestrictions"]["authorContact"]["contributors"]["person"]["values"] as $personVals){
+	    $authors[] = $personVals["value"];
+	 }
+      }
+      elseif(isset($actResult["authorshipRightsAccessRestrictions"]["authorContact"]["contributors"]["organization"]["values"])){
+	 foreach($actResult["authorshipRightsAccessRestrictions"]["authorContact"]["contributors"]["organization"]["values"] as $orgVals){
+	    $authors[] = $orgVals["value"];
+	 }
+      }
+      else{
+	 $authors[] = "Author / Creator not documented";
+      }	 
+	 
+      //loop through the author array, build author XML elements
+      foreach($authors as $author){
 	 $entryAuthor = $atomFullDoc->createElement("author");
 	 $entryAuthorName = $atomFullDoc->createElement("name");
 	 $entryAuthorNameText = $atomFullDoc->createTextNode($author);
@@ -307,7 +323,6 @@ if(is_array($NCSobj->results)){
 	 $entry->appendChild($entryAuthor);
       }
       
-      */
       
       if(isset($actResult["general"]["description"]["values"][0]["value"])){
 	 $entrySum = $atomFullDoc->createElement("summary");
