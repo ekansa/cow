@@ -171,9 +171,12 @@ class NCSfacetedSearch {
 	    
 	    //$this->schemaToFacetsArray = $facetsArray;
 	    
-	    foreach($this->schemaToFacetsArray as $key => $human){
-		$NCSrequestURL .= $paramSep."facet.category=".urlencode($key);
-		$paramSep = "&"; 
+	    foreach($this->schemaToFacetsArray as $key => $elementArray){
+		if(isset($elementArray["makeFacet"])){
+		    if($elementArray["makeFacet"]){
+			$NCSrequestURL .= $paramSep."facet.category=".urlencode($key);
+		    }
+		}
 	    }
 	    
 	    

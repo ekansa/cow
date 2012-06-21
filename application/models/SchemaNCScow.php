@@ -226,10 +226,25 @@ class SchemaNCScow {
             }
 	    
 	    
+	    $elementFacet = false;
+	    $query = "@cowconf:makeFacet";
+	    $resultF = $xpath->query($query, $elementNode);
+	    foreach($resultF as $node){
+		$elementFacet = $node->nodeValue;
+		if($elementFacet == "1"){
+		    $elementFacet = true;
+		}
+		else{
+		    $elementFacet = false;
+		}
+	    }
+	    
+	    
 	    //$elements[] = $actElement;
 	    if($elementName != false && $elementLabel != false){
 		$elements[$elementName]["displayLabel"] = $elementLabel;
 		$elements[$elementName]["xpath"] = false;
+		$elements[$elementName]["makeFacet"] = $elementFacet;
 	    }
 	}
 	
