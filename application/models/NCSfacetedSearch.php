@@ -742,8 +742,8 @@ class NCSfacetedSearch {
 		    $record = $this->queryAgainstSchema($xmlItem, $schemaArray);
 		    
 		    //a little logic for last updated
-		    if(isset($record["authorshipRightsAccessRestrictions"]["date"]["value"])){
-			$checkDate = $record["authorshipRightsAccessRestrictions"]["date"]["value"];
+		    if(isset($record["authorshipRightsAccessRestrictions"]["date"]["values"][0]["value"])){
+			$checkDate = $record["authorshipRightsAccessRestrictions"]["date"]["values"][0]["value"];
 			$checkDate = $this->shortDateFix($checkDate);
 			
 			if (($timestamp = strtotime($checkDate)) === false) {
