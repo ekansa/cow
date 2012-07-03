@@ -832,6 +832,28 @@ class NCSfacetedSearch {
     }
 
 
+    //map public domain to CC-zeo URI
+    function publicDomainCCzero($actResult){
+	$publicDomain = false;
+	if(isset($actResult["authorshipRightsAccessRestrictions"]["rights"]["propertyRights"]["values"])){
+	    foreach($actResult["authorshipRightsAccessRestrictions"]["rights"]["propertyRights"]["values"] as $IPvalues){
+		if(stristr($IPvalues["value"], "public domain")){
+		    $publicDomain = true;
+		}
+	    }
+	}
+	
+	if($publicDomain){
+	    return array("rel" => "license",
+			 "href" => "http://creativecommons.org/publicdomain/zero/1.0/",
+			 "title" => "This resource is Public Domain, as indicated by a Creative Commons Zero Dedication");
+	}
+	else{
+	    return false;
+	}
+    }
+
+
 
 }//end class
 

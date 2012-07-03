@@ -285,6 +285,16 @@ if(is_array($NCSobj->results)){
       $entryLink->setAttribute('href', $NCSobj->NCSrecordURI($NCSid)); //generate a link to the NCS metadata record
       $entry->appendChild($entryLink);
       
+      //add license link relation
+      $publicDomain = $NCSobj->publicDomainCCzero($actResult);
+      if($publicDomain != false){
+	 $entryLink = $atomFullDoc->createElement("link");
+	 foreach($publicDomain as $atributeKey => $value){
+	    $entryLink->setAttribute($atributeKey, $value);
+	 }
+	 $entry->appendChild($entryLink);
+      }
+      
       if(isset($actResult["general"]["resourceType"]["values"][0]["value"])){
 	 $entryCat = $atomFullDoc->createElement("category");
 	 $entryCat->setAttribute('term', $actResult["general"]["resourceType"]["values"][0]["value"]);
