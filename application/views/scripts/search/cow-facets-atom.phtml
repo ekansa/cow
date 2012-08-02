@@ -59,14 +59,17 @@ else{
    $subTitleText .= " Filtered by: ";
    $i = 1;
    foreach($NCSobj->existingFilters as $filter){
-      
       if($i>1){
-	 $subTitleText .= "; ";
+			$subTitleText .= "; ";
       }
-      
-      $subTitleText .= "($i) ".$filter["displayLabel"]." = ".$filter["values"][0]["value"];
-      
-      $i++;
+		
+		if(isset($filter["values"])){
+			$subTitleText .= "($i) ".$filter["displayLabel"]." = ".$filter["values"][0]["value"];
+		}
+		else{
+			$subTitleText .= "($i) ".$filter["displayLabel"]." = ".$filter["value"];
+		}
+		$i++;
    }
 }
 
@@ -141,9 +144,9 @@ $feedFirstLink->setAttribute("rel", "first");
 $firstURI = preg_replace('/(\?|&)page=\d*/', '', $linkURI);
 // append a '(?|&)page=1'
 if (strpos($firstURI,'?')) {
-    $firstURI = $firstURI . '&page=1';
+   $firstURI = $firstURI . '&page=1';
 } else {
-    $firstURI = $firstURI . '?page=1';
+   $firstURI = $firstURI . '?page=1';
 }
 
 $feedFirstLink->setAttribute("href", $firstURI);
@@ -161,12 +164,12 @@ $feedLastLink->setAttribute('rel', 'last');
 $lastPage = $NCSobj->lastPage;
 $lastURI = preg_replace('/(\?|&)page=\d*/', '', $linkURI); // remove any page number from the URI so we can replace it with the last page.
 if (strpos($lastURI,'?')) {
-    if($lastPage>0){
-      $lastURI = $lastURI . '&page=' . $lastPage;
-    }
+   if($lastPage>0){
+		$lastURI = $lastURI . '&page=' . $lastPage;
+   }
 } else {
    if($lastPage>0){
-      $lastURI = $lastURI . '?page=' . $lastPage;
+		$lastURI = $lastURI . '?page=' . $lastPage;
    }
 }
 
@@ -181,37 +184,37 @@ $page = $NCSobj->currentPage;
 
 // if there is no page number in the URI, we're on page 1, so set page number accrordingly
 if (!$page) {
-    $page = 1;
+   $page = 1;
 }
 
 // update the linkURI so the previous and next links will be correct
 if (strpos($linkURI,'?')) {
-    $linkURI = $linkURI . '&page=1';
+   $linkURI = $linkURI . '&page=1';
 } else {
-    $linkURI = $linkURI . '?page=1';
+   $linkURI = $linkURI . '?page=1';
 }
 
 
 // create previous link
 if ($NCSobj->prevPage != false) {
-    $previous = $NCSobj->prevPage;
-    $previousURI = preg_replace('/page=\d*/', 'page=' . $previous , $linkURI);
+   $previous = $NCSobj->prevPage;
+   $previousURI = preg_replace('/page=\d*/', 'page=' . $previous , $linkURI);
     //echo $previousURI;
-    $previousLink = $atomFullDoc->createElement('link');
-    $previousLink->setAttribute('rel', 'previous');
-    $previousLink->setAttribute('href', $previousURI);
-    $root->appendChild($previousLink);    
+   $previousLink = $atomFullDoc->createElement('link');
+   $previousLink->setAttribute('rel', 'previous');
+   $previousLink->setAttribute('href', $previousURI);
+   $root->appendChild($previousLink);    
 }
 
 // create next link
 //get page number and add 1; check to see that page + 1 is not greater than $lastPage
 if ($NCSobj->nextPage != false) {
-    $next = $NCSobj->nextPage;
-    $nextURI = preg_replace('/page=\d*/', 'page=' . $next , $linkURI);
-    $nextLink = $atomFullDoc->createElement('link');
-    $nextLink->setAttribute('rel', 'next');
-    $nextLink->setAttribute('href', $nextURI);
-    $root->appendChild($nextLink);
+   $next = $NCSobj->nextPage;
+   $nextURI = preg_replace('/page=\d*/', 'page=' . $next , $linkURI);
+   $nextLink = $atomFullDoc->createElement('link');
+   $nextLink->setAttribute('rel', 'next');
+   $nextLink->setAttribute('href', $nextURI);
+   $root->appendChild($nextLink);
 }
 
 $feedId = $atomFullDoc->createElement("id");
@@ -223,19 +226,19 @@ $updated = false;
 if(is_array($NCSobj->results)){
    foreach($NCSobj->results as $actResult){
       
-      $NCSid = $actResult["general"]["recordID"]["values"][0]["value"];
+		$NCSid = $actResult["general"]["recordID"]["values"][0]["value"];
       
       $entry = $atomFullDoc->createElement("entry");
       $entryTitle = $atomFullDoc->createElement("title");
       
       if(isset($actResult["general"]["title"]["values"][0]["value"])){
-	 $entryTitleText = $atomFullDoc->createTextNode($actResult["general"]["title"]["values"][0]["value"]);
-	 if($actResult["general"]["title"]["values"][0]["value"] != htmlentities($actResult["general"]["title"]["values"][0]["value"] )){
-	    $entryTitle->setAttribute('type', 'html');
-	 }
+			$entryTitleText = $atomFullDoc->createTextNode($actResult["general"]["title"]["values"][0]["value"]);
+			if($actResult["general"]["title"]["values"][0]["value"] != htmlentities($actResult["general"]["title"]["values"][0]["value"] )){
+				$entryTitle->setAttribute('type', 'html');
+			}
       }
       else{
-	 $entryTitleText = $atomFullDoc->createTextNode("Unspecified NCS resource title");
+			$entryTitleText = $atomFullDoc->createTextNode("Unspecified NCS resource title");
       }
       $entryTitle->appendChild($entryTitleText);
       $entry->appendChild($entryTitle);
@@ -247,7 +250,7 @@ if(is_array($NCSobj->results)){
       
       $format = "text/html"; //cheezy default, but assuming most resources are Web pages unless stated elsewhere
       if(isset($actResult["general"]["format"]["values"][0]["value"])){
-	 $format = $actResult["general"]["format"]["values"][0]["value"];
+			$format = $actResult["general"]["format"]["values"][0]["value"];
       }
       
       //link to the item itself
@@ -259,23 +262,23 @@ if(is_array($NCSobj->results)){
       
       //links to related items
       if(isset($actResult["general"]["relatedUrl"]["values"])){
-	 foreach($actResult["general"]["relatedUrl"]["values"] as $relLink){
-	    $linkRel = "related"; //default linking relation for related resources
-	    if(isset($relLink["attributes"]["kind"]["value"])){
-	       if($relLink["attributes"]["kind"]["value"] == "Is part of"){
-		  $linkRel = "collection"; //Map to IANA link relation, see http://www.iana.org/assignments/link-relations/link-relations.xml
-	       }
-	    }
+			foreach($actResult["general"]["relatedUrl"]["values"] as $relLink){
+				$linkRel = "related"; //default linking relation for related resources
+				if(isset($relLink["attributes"]["kind"]["value"])){
+					if($relLink["attributes"]["kind"]["value"] == "Is part of"){
+						$linkRel = "collection"; //Map to IANA link relation, see http://www.iana.org/assignments/link-relations/link-relations.xml
+					}
+				}
 	    
-	    $entryLink = $atomFullDoc->createElement("link");
-	    $entryLink->setAttribute('rel', $linkRel);
-	    //$entryLink->setAttribute("type", $format);
-	    if(isset($relLink["attributes"]["title"]["value"])){
-	       $entryLink->setAttribute('title', $relLink["attributes"]["title"]["value"]);
-	    }
-	    $entryLink->setAttribute('href', ($relLink["value"]));
-	    $entry->appendChild($entryLink);
-	 }
+				$entryLink = $atomFullDoc->createElement("link");
+				$entryLink->setAttribute('rel', $linkRel);
+				//$entryLink->setAttribute("type", $format);
+				if(isset($relLink["attributes"]["title"]["value"])){
+					$entryLink->setAttribute('title', $relLink["attributes"]["title"]["value"]);
+				}
+				$entryLink->setAttribute('href', ($relLink["value"]));
+				$entry->appendChild($entryLink);
+			}
       }
       
       //link relation to the metadata description
@@ -288,70 +291,112 @@ if(is_array($NCSobj->results)){
       //add license link relation
       $publicDomain = $NCSobj->publicDomainCCzero($actResult);
       if($publicDomain != false){
-	 $entryLink = $atomFullDoc->createElement("link");
-	 foreach($publicDomain as $atributeKey => $value){
-	    $entryLink->setAttribute($atributeKey, $value);
-	 }
-	 $entry->appendChild($entryLink);
+			$entryLink = $atomFullDoc->createElement("link");
+			foreach($publicDomain as $atributeKey => $value){
+				$entryLink->setAttribute($atributeKey, $value);
+			}
+			$entry->appendChild($entryLink);
       }
       
       if(isset($actResult["general"]["resourceType"]["values"][0]["value"])){
-	 $entryCat = $atomFullDoc->createElement("category");
-	 $entryCat->setAttribute('term', $actResult["general"]["resourceType"]["values"][0]["value"]);
-	 $entry->appendChild($entryCat);
+			$entryCat = $atomFullDoc->createElement("category");
+			$entryCat->setAttribute('term', $actResult["general"]["resourceType"]["values"][0]["value"]);
+			$entry->appendChild($entryCat);
       }
       
       if(isset($actResult["general"]["topicsSubjects"]["values"][0]["value"])){
-	 $entryCat = $atomFullDoc->createElement("category");
-	 $entryCat->setAttribute('term', $actResult["general"]["topicsSubjects"]["values"][0]["value"]);
-	 $entry->appendChild($entryCat);
+			$entryCat = $atomFullDoc->createElement("category");
+			$entryCat->setAttribute('term', $actResult["general"]["topicsSubjects"]["values"][0]["value"]);
+			$entry->appendChild($entryCat);
       }
       
       //authors are required for a valid Atom feed. Get author information, or default to an unknown author
       $authors = array();
-      if(isset($actResult["authorshipRightsAccessRestrictions"]["authorContact"]["contributors"]["person"]["values"])){
-	 foreach($actResult["authorshipRightsAccessRestrictions"]["authorContact"]["contributors"]["person"]["values"] as $personVals){
-	    $authors[] = $personVals["value"];
-	 }
+      if(isset($actResult["authorshipRightsAccessRestrictions"]["authorContact"]["contributors"]["person"]["nameLast"])){
+			foreach($actResult["authorshipRightsAccessRestrictions"]["authorContact"]["contributors"] as $person){
+				$lastName = false;
+				$firstName = false;
+				if(isset($person["nameLast"]["values"][0]["value"])){
+					$lastName = $person["nameLast"]["values"][0]["value"];
+				}
+				if(isset($person["nameFirst"]["values"][0]["value"])){
+					$firstName = $person["nameFirst"]["values"][0]["value"];
+				}
+				if($lastName != false && $firstName != false){
+					$authors[] = $lastName.", ".$firstName;
+				}
+				elseif($lastName != false && !$firstName){
+					$authors[] = $lastName;
+				}
+				elseif($firstName != false && !$lastName){
+					$authors[] = $firstName;
+				}
+				else{
+					//do nothing
+				}
+			}
       }
-      elseif(isset($actResult["authorshipRightsAccessRestrictions"]["authorContact"]["contributors"]["organization"]["values"])){
-	 foreach($actResult["authorshipRightsAccessRestrictions"]["authorContact"]["contributors"]["organization"]["values"] as $orgVals){
-	    $authors[] = $orgVals["value"];
-	 }
+      elseif(isset($actResult["authorshipRightsAccessRestrictions"]["authorContact"]["contributors"]["contributor"]["contributor"]) || isset($actResult["authorshipRightsAccessRestrictions"]["authorContact"]["contributors"]["contributor"]["organization"])){
+			foreach($actResult["authorshipRightsAccessRestrictions"]["authorContact"]["contributors"]as $contrib){
+				$orgName = false;
+				$deptName = false;
+				if(isset($contrib["organizationName"]["values"][0]["value"])){
+					$orgName = $contrib["organizationName"]["values"][0]["value"];
+				}
+				if(isset($contrib["department"]["values"][0]["value"])){
+					$deptName = $contrib["department"]["values"][0]["value"];
+				}
+				if($orgName != false && $deptName != false){
+					$authors[] = $orgName.", ".$deptName;
+				}
+				elseif($orgName != false && !$deptName){
+					$authors[] = $orgName;
+				}
+				elseif($deptName != false && !$orgName){
+					$authors[] = $deptName;
+				}
+				else{
+					//do nothing
+				}
+			}
       }
       else{
-	 $authors[] = "Author / Creator not documented";
+			$authors[] = "Author / Creator not documented";
       }	 
+	 
+		if(count($authors)<1){
+			$authors[] = "Author / Creator not documented";
+		}
 	 
       //loop through the author array, build author XML elements
       foreach($authors as $author){
-	 $entryAuthor = $atomFullDoc->createElement("author");
-	 $entryAuthorName = $atomFullDoc->createElement("name");
-	 $entryAuthorNameText = $atomFullDoc->createTextNode($author);
-	 $entryAuthorName->appendChild($entryAuthorNameText);
-	 $entryAuthor->appendChild($entryAuthorName);
-	 $entry->appendChild($entryAuthor);
+			$entryAuthor = $atomFullDoc->createElement("author");
+			$entryAuthorName = $atomFullDoc->createElement("name");
+			$entryAuthorNameText = $atomFullDoc->createTextNode($author);
+			$entryAuthorName->appendChild($entryAuthorNameText);
+			$entryAuthor->appendChild($entryAuthorName);
+			$entry->appendChild($entryAuthor);
       }
       
       
       if(isset($actResult["general"]["description"]["values"][0]["value"])){
-	 $entrySum = $atomFullDoc->createElement("summary");
-	 $entrySumText = $atomFullDoc->createTextNode($actResult["general"]["description"]["values"][0]["value"]);
-	 if($actResult["general"]["description"]["values"][0]["value"] != htmlentities($actResult["general"]["description"]["values"][0]["value"])){
-	    $entrySum->setAttribute('type', 'html');
-	 }
-	 $entrySum->appendChild($entrySumText);
-	 $entry->appendChild($entrySum);
+			$entrySum = $atomFullDoc->createElement("summary");
+			$entrySumText = $atomFullDoc->createTextNode($actResult["general"]["description"]["values"][0]["value"]);
+			if($actResult["general"]["description"]["values"][0]["value"] != htmlentities($actResult["general"]["description"]["values"][0]["value"])){
+				$entrySum->setAttribute('type', 'html');
+			}
+			$entrySum->appendChild($entrySumText);
+			$entry->appendChild($entrySum);
       }
       
       if(isset($actResult["authorshipRightsAccessRestrictions"]["date"]["values"][0]["value"])){
-	 $updated = $NCSobj->shortDateFix($actResult["authorshipRightsAccessRestrictions"]["date"]["values"][0]["value"]);
+			$updated = $NCSobj->shortDateFix($actResult["authorshipRightsAccessRestrictions"]["date"]["values"][0]["value"]);
       }
       else{
-	 //use the last updated if the time is missing
-	 if(!$updated){
-	    $updated = $NCSobj->lastUpdated;
-	 }
+			//use the last updated if the time is missing
+			if(!$updated){
+				$updated = $NCSobj->lastUpdated;
+			}
       }
       
       $updatedXML = date("Y-m-d\TH:i:s\-07:00", strtotime($updated));
