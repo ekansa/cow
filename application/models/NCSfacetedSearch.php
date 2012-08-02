@@ -47,10 +47,8 @@ class NCSfacetedSearch {
     
     public $displayAllResultMetadata; //show metadata elements marked in the NCS schema as not public
     
-    //const baseURL = "http://nsdl.org/dds-search";
     const baseURL = "http://cow.lhs.berkeley.edu/ncs/services/ddsws1-1";
-    const NCSuserKey = "1331750307615";
-	 const SCScode = "01341958998639";
+    const NCSuserKey = "1341958998639";
     const defaultNumReturn = 10;
     const defaultStartNum = 0;
     
@@ -134,7 +132,6 @@ class NCSfacetedSearch {
 		      $NCSparams["sortDescendingBy"] = "/key//general/authorshipRightsAccessRestrictions/date";
 		  }
 	
-		  $NCSparams["scs"] = self::SCScode;
 		  $this->NCSparams = $NCSparams;
     }
 
