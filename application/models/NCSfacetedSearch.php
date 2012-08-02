@@ -47,6 +47,8 @@ class NCSfacetedSearch {
     
     public $displayAllResultMetadata; //show metadata elements marked in the NCS schema as not public
     
+	 public $elementValueLimit; //limits attribute query to an element with a specific value, used tp fix bug: https://github.com/lhs/COW-metadata-configs/issues/2
+	 
     const baseURL = "http://cow.lhs.berkeley.edu/ncs/services/ddsws1-1";
     const NCSuserKey = "1341958998639";
     const defaultNumReturn = 10;
@@ -635,13 +637,18 @@ class NCSfacetedSearch {
 					 $this->removeValue = $value;
 					 $actFilter["HREFremove"] = $this->constructQueryURI($key, null);
 			  
-					 if(array_key_exists($key, $facets)){
-						  $actFilter["displayLabel"] = $facets[$key]["displayLabel"];
-						  $actFilter["hierarchy"] = $facets[$key]["pathDelimiter"];
-					 }
-					 elseif(array_key_exists($key, $paramConfig)){
-						  $actFilter["displayLabel"] = $paramConfig[$key]["displayLabel"];
-						  $actFilter["hierarchy"] = $paramConfig[$key]["pathDelimiter"];
+					 if(is_array($facets)){
+						  if(array_key_exists($key, $facets)){
+								$actFilter["displayLabel"] = $facets[$key]["displayLabel"];
+								$actFilter["hierarchy"] = $facets[$key]["pathDelimiter"];
+						  }
+						  elseif(array_key_exists($key, $paramConfig)){
+								$actFilter["displayLabel"] = $paramConfig[$key]["displayLabel"];
+								$actFilter["hierarchy"] = $paramConfig[$key]["pathDelimiter"];
+						  }
+						  else{
+								$actFilter["hierarchy"] = false;
+						  }
 					 }
 					 else{
 						  $actFilter["hierarchy"] = false;
@@ -771,32 +778,49 @@ class NCSfacetedSearch {
 						  if(isset($subArray["public"]) && !$this->displayAllResultMetadata){ //if we're not displaying all metadata elements, check if public
 								$public = $subArray["public"];
 						  }
+						  
+						  if($this->elementValueLimit != false){
+								//$replaceVal = "[text()='".$this->elementValueLimit."']/@";
+								//$subArray["xpath"] = str_replace("/@", $replaceVal, $subArray["xpath"]);
+								$replaceVal = "[".$this->elementValueLimit."]/@";
+								$subArray["xpath"] = str_replace("/@", $replaceVal, $subArray["xpath"]);
+								//echo $subArray["xpath"];
+						  }
+						  
 					
 						  if($xmlItem->xpath($subArray["xpath"]) && $public){
-								
+								$foundValue = false;
 								$record[$key]["displayLabel"] = $subArray["displayLabel"];
+								
 								foreach($xmlItem->xpath($subArray["xpath"]) as $node){
-						
+									 $foundValue = (string)$node;
 									 if(!$singleValue){
-										  $record[$key]["values"][]["value"] = (string)$node; //values can be an array, as when querying XML elements
+										  $record[$key]["values"][]["value"] = $foundValue; //values can be an array, as when querying XML elements
 									 }
 									 else{
-										  $record[$key]["value"] = (string)$node; //value not in an array, as XML attribute
+										  $record[$key]["value"] = $foundValue; //value not in an array, as XML attribute
+										  //$record[$key]["xpath"] = $subArray["xpath"];
 									 }
 								}
 						 
 								if(is_array($subArray["attributes"])){
+									 $nodeNum = 1;
 									 $newValueArray = array();
 									 foreach($record[$key]["values"] as $valArray){
+										  //$this->elementValueLimit = $valArray["value"];
+										  $this->elementValueLimit = $nodeNum;
 										  $valArray["attributes"] = $this->queryAgainstSchema($xmlItem, $subArray["attributes"], true);
 										  $newValueArray[] = $valArray;
+										  $nodeNum++;
 									 }
 									 $record[$key]["values"] = $newValueArray;
+									 $this->elementValueLimit = false;
 								}
 						  }
 					 }
 					 else{
 						  $record[$key] = $this->queryAgainstSchema($xmlItem, $subArray["children"]);
+						  //$this->elementValueLimit = false;
 					 }
 				}
 		  }
