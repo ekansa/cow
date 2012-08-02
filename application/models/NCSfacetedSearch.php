@@ -770,9 +770,8 @@ class NCSfacetedSearch {
 								$public = $subArray["public"];
 						  }
 					
-						  //echo "<h3>".$subArray["xpath"]."</h3>";
-					
 						  if($xmlItem->xpath($subArray["xpath"]) && $public){
+								
 								$record[$key]["displayLabel"] = $subArray["displayLabel"];
 								foreach($xmlItem->xpath($subArray["xpath"]) as $node){
 						

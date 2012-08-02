@@ -266,193 +266,187 @@ class SchemaNCScow {
 	
 	
 	//read the XSD document, make an array of metadata elements and human-friendly labels
-	function getXSDelements(){
+	 function getXSDelements(){
   
-  $xml = new DOMDocument();
-  $xml->loadXML($this->xsdString);
-  $xpath = new DOMXPath($xml);
-  foreach($this->nameSpaces as $prefix => $uri){
-		$xpath->registerNamespace($prefix, $uri); //get those namespaces registered!
-  }
+		  $xml = new DOMDocument();
+		  $xml->loadXML($this->xsdString);
+		  $xpath = new DOMXPath($xml);
+		  foreach($this->nameSpaces as $prefix => $uri){
+				$xpath->registerNamespace($prefix, $uri); //get those namespaces registered!
+		  }
   
-  $elements = array();
-  $query = "//xs:element";
-  $result = $xpath->query($query, $xml);
-  foreach($result as $elementNode){
-		$actElement = array();
-		$query = "@name";
-		$elementName = false;
-		$resultB = $xpath->query($query, $elementNode);
-		foreach($resultB as $node){
-	  //$actElement["elementName"] = $node->nodeValue;
-	  $elementName = $node->nodeValue;
-		}    
+		  $elements = array();
+		  $query = "//xs:element";
+		  $result = $xpath->query($query, $xml);
+		  foreach($result as $elementNode){
+				$actElement = array();
+				$query = "@name";
+				$elementName = false;
+				$resultB = $xpath->query($query, $elementNode);
+				foreach($resultB as $node){
+					 //$actElement["elementName"] = $node->nodeValue;
+					 $elementName = $node->nodeValue;
+				}    
+				
+				$elementLabel = false;
+				$query = "@cowconf:label";
+				$resultC = $xpath->query($query, $elementNode);
+				foreach($resultC as $node){
+					 //$actElement["label"] = $node->nodeValue;
+					 $elementLabel = $node->nodeValue;
+				}
+				
+				$elementFacet = false;
+				$query = "@cowconf:makeFacet";
+				$resultF = $xpath->query($query, $elementNode);
+				foreach($resultF as $node){
+					 $elementFacet = $node->nodeValue;
+					 if($elementFacet == "1"){
+						  $elementFacet = true;
+					 }
+					 else{
+						  $elementFacet = false;
+					 }
+				}
 		
-		$elementLabel = false;
-		$query = "@cowconf:label";
-		$resultC = $xpath->query($query, $elementNode);
-		foreach($resultC as $node){
-	  //$actElement["label"] = $node->nodeValue;
-	  $elementLabel = $node->nodeValue;
-			  }
 		
-		
-		$elementFacet = false;
-		$query = "@cowconf:makeFacet";
-		$resultF = $xpath->query($query, $elementNode);
-		foreach($resultF as $node){
-	  $elementFacet = $node->nodeValue;
-	  if($elementFacet == "1"){
-			$elementFacet = true;
-	  }
-	  else{
-			$elementFacet = false;
-	  }
-		}
-		
-		
-		//$elements[] = $actElement;
-		if($elementName != false && $elementLabel != false){
-	  $elements[$elementName]["displayLabel"] = $elementLabel;
-	  $elements[$elementName]["xpath"] = false;
-	  $elements[$elementName]["makeFacet"] = $elementFacet;
-		}
-  }
-  
-  $this->elements = $elements;
+				//$elements[] = $actElement;
+				if($elementName != false && $elementLabel != false){
+					 $elements[$elementName]["displayLabel"] = $elementLabel;
+					 $elements[$elementName]["xpath"] = false;
+					 $elements[$elementName]["makeFacet"] = $elementFacet;
+				}
+		  }  
+		  $this->elements = $elements;
 	}//end function
 	
 	
 	
-	function getXSD(){
-  $frontendOptions = array('lifetime' => self::cacheLife,'automatic_serialization' => true );
-  $backendOptions = array('cache_dir' => self::cacheDir );
-	  
-  $cache = Zend_Cache::factory('Core','File',$frontendOptions,$backendOptions);
-  $cache_id = self::XSDcacheID;
-  
-  if(!$cache_result = $cache->load($cache_id)) {
-		@$xsdString = file_get_contents(self::schemaURL); //not in cache / cache expired, go get from source
-		if(!$xsdString){
-	  $this->recordError("XSD not retrieved");
-	  $this->xsdString = false;
-	  return false;
-		}
-		else{
-	  $cache->save($xsdString, $cache_id); //save XSD to the cache
-		}
-  }
-  else{
-		$xsdString = $cache_result;
-  }
-  
-  //quick validation
-  @$xml = simplexml_load_string($xsdString);
-  if($xml != false){
-		unset($xml);
-		$this->xsdString = $xsdString;
-		return true;
-  }
-  else{
-		$this->xsdString = false;
-		$this->recordError("XSD invalid");
-		return false;
-  }
-	}// end function
+	 function getXSD(){
+		  $frontendOptions = array('lifetime' => self::cacheLife,'automatic_serialization' => true );
+		  $backendOptions = array('cache_dir' => self::cacheDir );
+			  
+		  $cache = Zend_Cache::factory('Core','File',$frontendOptions,$backendOptions);
+		  $cache_id = self::XSDcacheID;
+		  
+		  if(!$cache_result = $cache->load($cache_id)) {
+				@$xsdString = file_get_contents(self::schemaURL); //not in cache / cache expired, go get from source
+				if(!$xsdString){
+					 $this->recordError("XSD not retrieved");
+					 $this->xsdString = false;
+					 return false;
+				}
+				else{
+					 $cache->save($xsdString, $cache_id); //save XSD to the cache
+				}
+		  }
+		  else{
+				$xsdString = $cache_result;
+		  }
+		  
+		  //quick validation
+		  @$xml = simplexml_load_string($xsdString);
+		  if($xml != false){
+				unset($xml);
+				$this->xsdString = $xsdString;
+				return true;
+		  }
+		  else{
+				$this->xsdString = false;
+				$this->recordError("XSD invalid");
+				return false;
+		  }
+	 }// end function
 
 
 
 
 	function getFieldList(){
-  $frontendOptions = array('lifetime' => self::cacheLife,'automatic_serialization' => true );
-  $backendOptions = array('cache_dir' => self::cacheDir );
-	  
-  $cache = Zend_Cache::factory('Core','File',$frontendOptions,$backendOptions);
-  $cache_id = self::NCSfieldListID;
-  
-  if(!$cache_result = $cache->load($cache_id)) {
-		@$xmlString = file_get_contents(self::fieldListURL); //not in cache / cache expired, go get from source
-		if(!$xmlString){
-	  $this->recordError("Field List XML not retrieved");
-	  $this->fieldListXML = false;
-	  return false;
-		}
-		else{
-	  $cache->save($xmlString, $cache_id); //save XSD to the cache
-		}
-  }
-  else{
-		$xmlString = $cache_result;
-  }
-  
-  //quick validation
-  @$xml = simplexml_load_string($xmlString);
-  if($xml != false){
-		unset($xml);
-		$this->fieldListXML = $xmlString;
-		return true;
-  }
-  else{
-		$this->fieldListXML = false;
-		$this->fieldListXML("Field List XML invalid");
-		return false;
-  }
-	}// end function
-
-
-	function parseFieldList(){
-  $xml = new DOMDocument();
-  $xml->loadXML($this->fieldListXML);
-  $xpath = new DOMXPath($xml);
-  foreach($this->nameSpaces as $prefix => $uri){
-		$xpath->registerNamespace($prefix, $uri); //get those namespaces registered!
-  }
-  
-  $elements = $this->elements;
-  $newElements = $elements;
-  $query = "//meta:fields/meta:field";
-  $result = $xpath->query($query, $xml);
-  foreach($result as $fieldNode){
-		
-		$fieldXpath = $fieldNode->nodeValue;
-		$xpathXplode = explode("/", $fieldXpath);
-		if(count($xpathXplode)>1){
-	  $lastElement = $xpathXplode[(count($xpathXplode)-1)]; //the last element of the xpath path
-	  $firstElement = $xpathXplode[1]; //not really the first, since the xpaths start with a slash
-	  
-	  if($firstElement == "key"){
-			//it's the kind of field we'd want to query
-			foreach($elements as $key => $elementArray){
+		  $frontendOptions = array('lifetime' => self::cacheLife,'automatic_serialization' => true );
+		  $backendOptions = array('cache_dir' => self::cacheDir );
+			  
+		  $cache = Zend_Cache::factory('Core','File',$frontendOptions,$backendOptions);
+		  $cache_id = self::NCSfieldListID;
 		  
-		  
-		  if($lastElement == $key){
-				$newElements[$key]["xpath"] = $fieldXpath;
+		  if(!$cache_result = $cache->load($cache_id)) {
+				@$xmlString = file_get_contents(self::fieldListURL); //not in cache / cache expired, go get from source
+				if(!$xmlString){
+					 $this->recordError("Field List XML not retrieved");
+					 $this->fieldListXML = false;
+					 return false;
+				}
+				else{
+					 $cache->save($xmlString, $cache_id); //save XSD to the cache
+				}
 		  }
-			}
-	  }
-		}
-  }
-  
-  $this->elements = $newElements; 
-  
-	}
+		  else{
+				$xmlString = $cache_result;
+		  }
+		  
+		  //quick validation
+		  @$xml = simplexml_load_string($xmlString);
+		  if($xml != false){
+				unset($xml);
+				$this->fieldListXML = $xmlString;
+				return true;
+		  }
+		  else{
+				$this->fieldListXML = false;
+				$this->fieldListXML("Field List XML invalid");
+				return false;
+		  }
+	 }// end function
+
+
+	 function parseFieldList(){
+		  $xml = new DOMDocument();
+		  $xml->loadXML($this->fieldListXML);
+		  $xpath = new DOMXPath($xml);
+		  foreach($this->nameSpaces as $prefix => $uri){
+				$xpath->registerNamespace($prefix, $uri); //get those namespaces registered!
+		  }
+		  
+		  $elements = $this->elements;
+		  $newElements = $elements;
+		  $query = "//meta:fields/meta:field";
+		  $result = $xpath->query($query, $xml);
+		  foreach($result as $fieldNode){
+				
+				$fieldXpath = $fieldNode->nodeValue;
+				$xpathXplode = explode("/", $fieldXpath);
+				if(count($xpathXplode)>1){
+					 $lastElement = $xpathXplode[(count($xpathXplode)-1)]; //the last element of the xpath path
+					 $firstElement = $xpathXplode[1]; //not really the first, since the xpaths start with a slash
+					 
+					 if($firstElement == "key"){
+						  //it's the kind of field we'd want to query
+						  foreach($elements as $key => $elementArray){
+								if($lastElement == $key){
+									 $newElements[$key]["xpath"] = $fieldXpath;
+								}
+						  }
+					 }
+				}
+		  }
+		  $this->elements = $newElements; 
+	 }
 
 
 	
 	//record errors 
-	function recordError($errorMessage){
+	 function recordError($errorMessage){
   
-  if(!is_array($this->errors)){
-		$errors = array();
-  }
-  else{
-		$errors = $this->errors;
-  }
-
-  $errors[] = $errorMessage;
-  $this->errors = $errors;
+		  if(!is_array($this->errors)){
+				$errors = array();
+		  }
+		  else{
+				$errors = $this->errors;
+		  }
+		
+		  $errors[] = $errorMessage;
+		  $this->errors = $errors;
   
-	}//end function
+	 }//end function
 	
 	
 }//end class
