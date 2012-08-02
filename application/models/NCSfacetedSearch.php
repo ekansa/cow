@@ -719,10 +719,12 @@ class NCSfacetedSearch {
 					 foreach($xml->xpath("/ddsws:DDSWebService/ddsws:Search/ddsws:results/ddsws:record/ddsws:metadata") as $xmlItem){
 						  
 						  foreach($this->NCSnamespaces as $prefix => $nsURI){
-						 $xmlItem->registerXPathNamespace($prefix, $nsURI); //register all the needed namespaces for XPATH
+								$xmlItem->registerXPathNamespace($prefix, $nsURI); //register all the needed namespaces for XPATH
 						  }
 						  
 						  $record = $this->queryAgainstSchema($xmlItem, $schemaArray);
+						  $NCSid = $record["general"]["recordID"]["values"][0]["value"];
+						  $record["metadataURI"] = $this->NCSrecordURI($NCSid);
 						  
 						  //a little logic for last updated
 						  if(isset($record["authorshipRightsAccessRestrictions"]["date"]["values"][0]["value"])){
