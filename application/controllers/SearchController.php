@@ -165,16 +165,33 @@ class SearchController extends Zend_Controller_Action
 		  $NCSobj->parseXMLfacets($NCSobj->NCSresponse);
 		  $NCSobj->parseXMLresults($NCSobj->NCSresponse);
 		  $NCSobj->describeExistingFilters();
+		  $NCSobj->makeCurrentSortOptions();
 		  
 		  $output = array();
-		  $output["totalNumResults"] = $NCSobj->totalNumResults;
-		  $output["numReturned"] = $NCSobj->numReturned;
+		  $output["totalNumResults"] = $NCSobj->totalNumResults +0;
+		  $output["numReturned"] = $NCSobj->numReturned +0;
+		  $output["numberPerPage"] = $NCSobj->numPerPage;
+		  
+		  $output["recordNumberStart"] = (($NCSobj->currentPage - 1) * $NCSobj->numPerPage) + 1;
+		  $output["recordNumberEnd"] = ($output["recordNumberStart"] + count($NCSobj->results))-1;
+		  
+		  if($output["recordNumberEnd"] > $output["totalNumResults"]){
+				$output["recordNumberEnd"] = $output["totalNumResults"];
+		  }
+		  
+		  //$output["countRes"] = count($NCSobj->results);
+		  
 		  $output["lastUpdated"] = $NCSobj->lastUpdated;
-		  $output["pagination"] = array("HREFfirstPage" => $NCSobj->firstPageURI,
-							  "HREFprevPage" => $NCSobj->prevPageURI,
-							  "HREFnextPage" => $NCSobj->nextPageURI,
-							  "HREFlastPage" => $NCSobj->lastPageURI
-							  );
+		  $output["pagination"] = array(
+						  "currentPageNum" => $NCSobj->currentPage + 0,
+						  "HREFfirstPage" => $NCSobj->firstPageURI,
+						  "HREFprevPage" => $NCSobj->prevPageURI,
+						  "HREFnextPage" => $NCSobj->nextPageURI,
+						  "HREFlastPage" => $NCSobj->lastPageURI
+						  );
+		  
+		  $output["currentSorting"] = $NCSobj->currentSorting;
+		  $output["sorting"] = $NCSobj->currentSortOptions;
 		  $output["HREFatom"] = $NCSobj->AtomRequestURI;
 		  $output["NCSrequest"] = $NCSobj->NCSrequestURL;
 		  $output["existingFilters"] = $NCSobj->existingFilters;

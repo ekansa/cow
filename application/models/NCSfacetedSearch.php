@@ -42,6 +42,8 @@ class NCSfacetedSearch {
     public $nextPageURI;
     public $lastPageURI;
     
+	 public $currentSorting; //array of the current sorting
+	 public $currentSortOptions; //array of available sort options
     public $lastUpdated; //last updated time
     public $results; //search results;
     
@@ -74,6 +76,12 @@ class NCSfacetedSearch {
 				  "cow" => "http://cow.lhs.berkeley.edu"
 				  );
     
+	 public $sortFields = array(
+		  "title" => array("display" => "Title", "NCS" => "/key//record/general/title"), 
+		  "url" => array("display" => "URL", "NCS" => "/key//record/general/url"),  
+		  "date" => array("display" => "Date", "NCS" => "/key//record/authorshipRightsAccessRestrictions/date") 
+	 );
+  
     
     
     function getBaseURL(){
@@ -127,13 +135,35 @@ class NCSfacetedSearch {
 		      $NCSparams["s"] = self::defaultStartNum;
 		  }
 	
-		  if(isset($requestParams["sort"])){
-		      $NCSparams["sort"] = $requestParams["sort"];
+		  $sorting = false;
+		  $sortFields = $this->sortFields;
+		  $currentSorting = array();
+		  if(isset($requestParams["sortDescendingBy"])){
+		      if(array_key_exists($requestParams["sortDescendingBy"], $sortFields)){
+					 $NCSparams["sortDescendingBy"] = $sortFields[$requestParams["sortDescendingBy"]]["NCS"];
+					 $currentSorting["display"] = $sortFields[$requestParams["sortDescendingBy"]]["display"];
+					 $currentSorting["order"] = "Descending";
+					 $sorting = true;
+				}
+		  }
+		  elseif(isset($requestParams["sortAscendingBy"])){
+				if(array_key_exists($requestParams["sortAscendingBy"], $sortFields)){
+					 $NCSparams["sortAscendingBy"] = $sortFields[$requestParams["sortAscendingBy"]]["NCS"];
+					 $currentSorting["display"] = $sortFields[$requestParams["sortAscendingBy"]]["display"];
+					 $currentSorting["order"] = "Ascending";
+					 $sorting = true;
+				}
 		  }
 		  else{
-		      $NCSparams["sortDescendingBy"] = "/key//general/authorshipRightsAccessRestrictions/date";
+				//do nothing
 		  }
-	
+		  
+		  if(!$sorting && !isset($requestParams["qq"])){
+				//default sorting
+				$NCSparams["sortDescendingBy"] = "/key//general/authorshipRightsAccessRestrictions/date";
+				$currentSorting = array("display" => "Date", "order" => "Descending");
+		  }
+		  $this->currentSorting = $currentSorting;
 		  $this->NCSparams = $NCSparams;
     }
 
@@ -379,6 +409,12 @@ class NCSfacetedSearch {
 		  unset($requestParams["action"]);
 		  unset($requestParams["module"]);
 		  
+		  if($paramKey == "sortAscendingBy" || $paramKey == "sortDescendingBy"){
+				//we're making new sorting, so remove the old
+				unset($requestParams["sortAscendingBy"]);
+				unset($requestParams["sortDescendingBy"]);
+		  }
+		  
 		  if($pageReset){
 				unset($requestParams["page"]); //remove a parameter for paging. new searches start on new pagination
 		  }
@@ -620,6 +656,8 @@ class NCSfacetedSearch {
 		  
 		  unset($requestParams["page"]);
 		  unset($requestParams["sort"]);
+		  unset($requestParams["sortAscendingBy"]);
+		  unset($requestParams["sortDescendingBy"]);
 		  
 		  $existingFilters = array();
 		  
@@ -857,6 +895,28 @@ class NCSfacetedSearch {
     }
 
 
+	 function makeCurrentSortOptions(){
+		  
+		  $sortFields = $this->sortFields;
+		  $requestParams = $this->requestParams;
+		  //get rid of unwanted request parameters
+		  unset($requestParams["controller"]);
+		  unset($requestParams["action"]);
+		  unset($requestParams["module"]);
+		  unset($requestParams["callback"]);
+		  
+		  unset($requestParams["page"]);
+		  unset($requestParams["sort"]);
+		  
+		  $currentSortOptions = array();
+		  foreach($sortFields as $valKey => $fieldArray){
+				$name = $fieldArray["display"];
+				$currentSortOptions[$name] = array(	"HREFsortAscendingBy" =>  $this->constructQueryURI("sortAscendingBy", $valKey),
+																"HREFsortDescendingBy" =>  $this->constructQueryURI("sortDescendingBy", $valKey) );
+		  }
+		  
+		  $this->currentSortOptions = $currentSortOptions;
+	 }
 
 }//end class
 
