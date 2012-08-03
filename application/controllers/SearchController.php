@@ -172,12 +172,16 @@ class SearchController extends Zend_Controller_Action
 		  $output["numReturned"] = $NCSobj->numReturned +0;
 		  $output["numberPerPage"] = $NCSobj->numPerPage;
 		  
+		  /*
 		  $output["recordNumberStart"] = (($NCSobj->currentPage - 1) * $NCSobj->numPerPage) + 1;
 		  $output["recordNumberEnd"] = ($output["recordNumberStart"] + count($NCSobj->results))-1;
-		  
 		  if($output["recordNumberEnd"] > $output["totalNumResults"]){
 				$output["recordNumberEnd"] = $output["totalNumResults"];
 		  }
+		  */
+		  
+		  $output["recordNumberStart"] = $NCSobj->offset + 1;
+		  $output["recordNumberEnd"] = $NCSobj->offset + $NCSobj->numReturned;
 		  
 		  //$output["countRes"] = count($NCSobj->results);
 		  

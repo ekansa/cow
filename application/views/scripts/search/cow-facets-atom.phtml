@@ -43,7 +43,8 @@ $resultsPerPage = $NCSobj->numPerPage;
 
 // Display the number of items found and handle paging. 
 $first = $offset + 1;
-$last = $offset + $resultsPerPage;
+$last = $offset + $NCSobj->numReturned;
+
 
 // make sure the last page, which will usually contain fewer than 10 items, displays the correct number of items.
 if ($numFound < $last) {

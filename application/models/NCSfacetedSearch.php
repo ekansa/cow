@@ -61,6 +61,8 @@ class NCSfacetedSearch {
     
     public $paramConfig = array("qq" => array("displayLabel" => "Keyword search",
 					      "pathDelimiter" => false),
+				"asnId" => array("displayLabel" => "Benchmarks for Science Literacy",
+					      "pathDelimiter" => false),
 				"NCSq" => array("displayLabel" => "NCS service query",
 					      "pathDelimiter" => false)
 				);
@@ -128,7 +130,7 @@ class NCSfacetedSearch {
 		  }
 	
 		  if($this->currentPage > 1){
-		      $NCSparams["s"] = (($this->currentPage - 1) * $NCSparams["n"])-1;
+		      $NCSparams["s"] = (($this->currentPage - 1) * $NCSparams["n"]);
 		  }
 	
 		  if(!isset($NCSparams["s"])){
@@ -164,6 +166,7 @@ class NCSfacetedSearch {
 				$currentSorting = array("display" => "Date", "order" => "Descending");
 		  }
 		  $this->currentSorting = $currentSorting;
+		  
 		  $this->NCSparams = $NCSparams;
     }
 
@@ -198,13 +201,24 @@ class NCSfacetedSearch {
 				
 				//$this->schemaToFacetsArray = $facetsArray;
 				
+				$educationLevel = false;
+				
 				foreach($this->schemaToFacetsArray as $key => $elementArray){
 					 if(isset($elementArray["makeFacet"])){
 						  if($elementArray["makeFacet"]){
-						 $NCSrequestURL .= $paramSep."facet.category=".urlencode($key);
+								$NCSrequestURL .= $paramSep."facet.category=".urlencode($key);
+								if(stristr($key, "educationalLevel")){
+									 $educationLevel = true;
+								}
 						  }
 					 }
 				}
+				
+				if(!$educationLevel){
+					 //add educationl level just in case it's not there.
+					 $NCSrequestURL .= $paramSep."facet.category=educationalLevel";
+				}
+				
 				
 				//start to build parmaters for filtering on facets
 				$NCSquery = "";
@@ -267,7 +281,6 @@ class NCSfacetedSearch {
 
     function NCSsearch(){
 		  $NCSparams = $this->NCSparams;
-		  
 		  $NCSrequestURL = self::baseURL;
 		  
 		  $firstLoop = true;
@@ -283,6 +296,19 @@ class NCSfacetedSearch {
 		  }
 		  
 		  $NCSrequestURL = $this->addFacetCategories($NCSrequestURL); //add facet categories
+		  
+		  $requestParams = $this->requestParams;
+		  if(isset($requestParams["asnId"])){
+				
+				$xpath = "(/key//educational/benchmarks/asnId:\"".urlencode($requestParams["asnId"])."\"+OR+\"".urlencode($requestParams["asnId"])."\")";
+				if(strstr($NCSrequestURL, "q=")){
+					 $NCSrequestURL .= "+AND+".$xpath;	 
+				}
+				else{
+					 $NCSrequestURL .= "&q=".$xpath;
+				}
+		  }
+		  
 		  $this->NCSrequestURL = $NCSrequestURL;
 		  @$this->NCSresponse = file_get_contents($NCSrequestURL);
 		  if(!$this->NCSresponse){
