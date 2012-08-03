@@ -143,6 +143,8 @@ class SearchController extends Zend_Controller_Action
 		  
 		  Zend_Loader::loadClass('NCSfacetedSearch'); //class to get schema information
 		  Zend_Loader::loadClass('SchemaNCScow'); //class to get schema information
+		  Zend_Loader::loadClass('CowVocabs'); //class to get vocabulary information
+		  
 		  $SchemaNCScow = new SchemaNCScow;
 		  $SchemaNCScow->getXSD();
 		  $SchemaNCScow->getFieldList();
@@ -172,18 +174,8 @@ class SearchController extends Zend_Controller_Action
 		  $output["numReturned"] = $NCSobj->numReturned +0;
 		  $output["numberPerPage"] = $NCSobj->numPerPage;
 		  
-		  /*
-		  $output["recordNumberStart"] = (($NCSobj->currentPage - 1) * $NCSobj->numPerPage) + 1;
-		  $output["recordNumberEnd"] = ($output["recordNumberStart"] + count($NCSobj->results))-1;
-		  if($output["recordNumberEnd"] > $output["totalNumResults"]){
-				$output["recordNumberEnd"] = $output["totalNumResults"];
-		  }
-		  */
-		  
 		  $output["recordNumberStart"] = $NCSobj->offset + 1;
 		  $output["recordNumberEnd"] = $NCSobj->offset + $NCSobj->numReturned;
-		  
-		  //$output["countRes"] = count($NCSobj->results);
 		  
 		  $output["lastUpdated"] = $NCSobj->lastUpdated;
 		  $output["pagination"] = array(
@@ -195,6 +187,8 @@ class SearchController extends Zend_Controller_Action
 						  );
 		  
 		  $output["currentSorting"] = $NCSobj->currentSorting;
+		  $output["facetSorting"] = $NCSobj->facetSorting;
+		  
 		  $output["sorting"] = $NCSobj->currentSortOptions;
 		  $output["HREFatom"] = $NCSobj->AtomRequestURI;
 		  $output["NCSrequest"] = $NCSobj->NCSrequestURL;
@@ -223,6 +217,8 @@ class SearchController extends Zend_Controller_Action
 		  
 		  Zend_Loader::loadClass('NCSfacetedSearch'); //class to get schema information
 		  Zend_Loader::loadClass('SchemaNCScow'); //class to get schema information
+		  Zend_Loader::loadClass('CowVocabs'); //class to get vocabulary information
+		  
 		  $SchemaNCScow = new SchemaNCScow;
 		  $SchemaNCScow->getXSD();
 		  $SchemaNCScow->getFieldList();
@@ -253,7 +249,18 @@ class SearchController extends Zend_Controller_Action
 
 
 
-
+	 function vocabAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		  $requestParams =  $this->_request->getParams();
+		  $requestURI = $this->_request->getRequestUri();
+		  
+		  Zend_Loader::loadClass('NCSfacetedSearch'); //class to get schema information
+		  Zend_Loader::loadClass('SchemaNCScow'); //class to get schema information
+		  Zend_Loader::loadClass('CowVocabs'); //class to get vocabulary information
+		  
+		  $VocabObj = new CowVocabs;
+		  echo $VocabObj->getVocab("language");
+	 }
 
 
 

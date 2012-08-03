@@ -7,7 +7,7 @@ Gets NCS metadata schema description, use it for making human readable search re
 
 class SchemaNCScow {
 
-	const schemaURL = "http://cow.lhs.berkeley.edu/metadata/cowItem/0.6/cowItemType.xsd"; // url of the schema
+	const schemaURL = "http://cow.lhs.berkeley.edu/metadata/cowItem/1.0rc2/cowItemType.xsd"; // url of the schema
 	const fieldListURL = "http://cow.lhs.berkeley.edu/ncs/services/ddsws1-1?verb=ListFields"; // url of the field List
 	
 	const cacheLife = 90000; //25 hour cache life. because why not

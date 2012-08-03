@@ -51,8 +51,12 @@ class NCSfacetedSearch {
     
 	 public $elementValueLimit; //limits attribute query to an element with a specific value, used tp fix bug: https://github.com/lhs/COW-metadata-configs/issues/2
 	 
+	 public $numericSortFacets;
+	 public $facetSorting;
+	 
     const baseURL = "http://cow.lhs.berkeley.edu/ncs/services/ddsws1-1";
-    const NCSuserKey = "1341958998639";
+	 const imageBaseURL = "http://dev.nasa-digital-library.pantheon.berkeley.edu/sites/default/files/images/resource_images/";
+    const NCSuserKey = "1344019002616";
     const defaultNumReturn = 10;
     const defaultStartNum = 0;
     
@@ -143,7 +147,7 @@ class NCSfacetedSearch {
 		  if(isset($requestParams["sortDescendingBy"])){
 		      if(array_key_exists($requestParams["sortDescendingBy"], $sortFields)){
 					 $NCSparams["sortDescendingBy"] = $sortFields[$requestParams["sortDescendingBy"]]["NCS"];
-					 $currentSorting["display"] = $sortFields[$requestParams["sortDescendingBy"]]["display"];
+					 $currentSorting["displayLabel"] = $sortFields[$requestParams["sortDescendingBy"]]["display"];
 					 $currentSorting["order"] = "Descending";
 					 $sorting = true;
 				}
@@ -151,7 +155,7 @@ class NCSfacetedSearch {
 		  elseif(isset($requestParams["sortAscendingBy"])){
 				if(array_key_exists($requestParams["sortAscendingBy"], $sortFields)){
 					 $NCSparams["sortAscendingBy"] = $sortFields[$requestParams["sortAscendingBy"]]["NCS"];
-					 $currentSorting["display"] = $sortFields[$requestParams["sortAscendingBy"]]["display"];
+					 $currentSorting["displayLabel"] = $sortFields[$requestParams["sortAscendingBy"]]["display"];
 					 $currentSorting["order"] = "Ascending";
 					 $sorting = true;
 				}
@@ -163,9 +167,20 @@ class NCSfacetedSearch {
 		  if(!$sorting && !isset($requestParams["qq"])){
 				//default sorting
 				$NCSparams["sortDescendingBy"] = "/key//general/authorshipRightsAccessRestrictions/date";
-				$currentSorting = array("display" => "Date", "order" => "Descending");
+				$currentSorting = array("displayLabel" => "Date", "order" => "Descending");
 		  }
 		  $this->currentSorting = $currentSorting;
+		  
+		  $facetSorting = array();
+		  if(isset($requestParams["facetSort"])){
+				$this->numericSortFacets = false;
+				$facetSorting["currentFacetSort"] = "Terms";
+		  }
+		  else{
+				$this->numericSortFacets = true;
+				$facetSorting["currentFacetSort"] = "Facet Count";
+		  }
+		  $this->facetSorting = $facetSorting;
 		  
 		  $this->NCSparams = $NCSparams;
     }
@@ -248,6 +263,18 @@ class NCSfacetedSearch {
 					 }   
 				}
 				
+				$asnId = false;
+				if(isset($requestParams["asnId"])){
+					 $asnId = true;
+					 $xpath = "(/key//educational/benchmarks/asnId:\"".urlencode($requestParams["asnId"])."\"+OR+\"".urlencode($requestParams["asnId"])."\")";
+					 if(strlen($NCSquery)>1){
+						  $NCSquery .= "+AND+".$xpath;	 
+					 }
+					 else{
+						  $NCSquery = $xpath;
+					 }
+				}
+				
 				
 				if(isset($requestParams["NCSq"])){
 					 $NCSquery = $requestParams["NCSq"]; //allows direct querying of the NCS repository, overrights exiting NCSqueries
@@ -264,9 +291,8 @@ class NCSfacetedSearch {
 					 $NCSrequestURL .= $paramSep."q=".$NCSquery; //add the q parameter to the NCS request
 				}
 				else{
-					 //"q" parameter not yet used in the request
-					 
-					 if(!$dillDown){
+					 //"q" parameter not yet used in the request	 
+					 if(!$dillDown || $asnId){
 						  $NCSrequestURL .= $paramSep."q=".$NCSquery; //only do this if no drill down, otherwise don't add a q parameter
 					 }
 				}
@@ -296,18 +322,6 @@ class NCSfacetedSearch {
 		  }
 		  
 		  $NCSrequestURL = $this->addFacetCategories($NCSrequestURL); //add facet categories
-		  
-		  $requestParams = $this->requestParams;
-		  if(isset($requestParams["asnId"])){
-				
-				$xpath = "(/key//educational/benchmarks/asnId:\"".urlencode($requestParams["asnId"])."\"+OR+\"".urlencode($requestParams["asnId"])."\")";
-				if(strstr($NCSrequestURL, "q=")){
-					 $NCSrequestURL .= "+AND+".$xpath;	 
-				}
-				else{
-					 $NCSrequestURL .= "&q=".$xpath;
-				}
-		  }
 		  
 		  $this->NCSrequestURL = $NCSrequestURL;
 		  @$this->NCSresponse = file_get_contents($NCSrequestURL);
@@ -552,6 +566,8 @@ class NCSfacetedSearch {
 	
 		  if($NCSresponse){
 				
+				$VocabObj = new CowVocabs; //needed to add display values to facets
+				
 				$xml = simplexml_load_string($NCSresponse);
 				foreach($this->NCSnamespaces as $prefix => $nsURI){
 					 $xml->registerXPathNamespace($prefix, $nsURI); //register all the needed namespaces for XPATH
@@ -652,6 +668,14 @@ class NCSfacetedSearch {
 									 $actResults[] = $actResult; //add the result if the
 								}
 						  }//end loop through results
+						  
+						  //now process results to have display values (if needed)
+						  $VocabObj->getVocabTerms($actCategory);
+						  $actResults = $VocabObj->addDisplayValues($actResults);
+						  if(!$this->numericSortFacets){
+								$actResults = $VocabObj->sortValues($actResults); //resort facets to schema enumeration order, or alphabetic
+						  }
+						  
 						  $actFacet["result"] = $actResults;
 						  $facets[$actCategory] = $actFacet;
 					 }
@@ -684,6 +708,7 @@ class NCSfacetedSearch {
 		  unset($requestParams["sort"]);
 		  unset($requestParams["sortAscendingBy"]);
 		  unset($requestParams["sortDescendingBy"]);
+		  unset($requestParams["facetSort"]);
 		  
 		  $existingFilters = array();
 		  
@@ -815,6 +840,12 @@ class NCSfacetedSearch {
 								}
 						  }
 						  
+						  //prepend base URL to images
+						  if(isset($record["general"]["imageUrl"]["values"][0]["value"])){
+								$record["general"]["imageUrl"]["values"][0]["value"] = self::imageBaseURL.$record["general"]["imageUrl"]["values"][0]["value"];
+						  }
+						  
+						  
 						  $records[] = $record;
 					 }
 				}
@@ -833,6 +864,8 @@ class NCSfacetedSearch {
     //outputs a PHP array which can later be expressed as JSON, Atom, etc.
     function queryAgainstSchema($xmlItem, $schemaArray, $singleValue = false){
 	
+		  $VocabObj = new CowVocabs; //needed to add display values to facets
+		  
 		  $record = array();
 		  foreach($schemaArray as $key => $subArray){
 				
@@ -863,8 +896,19 @@ class NCSfacetedSearch {
 									 }
 									 else{
 										  $record[$key]["value"] = $foundValue; //value not in an array, as XML attribute
-										  //$record[$key]["xpath"] = $subArray["xpath"];
+										  $VocabObj->getVocabTerms($key);
+										  $displayValue = $VocabObj->getDisplayValue($foundValue);
+										  if($displayValue != false){
+												$record[$key]["displayValue"] = $displayValue;
+										  }
 									 }
+								}
+								
+								//add display values to the list of values
+								if(isset($record[$key]["values"])){
+									 $actValues = $record[$key]["values"];
+									 $VocabObj->getVocabTerms($key);
+									 $record[$key]["values"] = $VocabObj->addDisplayValues($actValues);
 								}
 						 
 								if(is_array($subArray["attributes"])){
@@ -940,6 +984,12 @@ class NCSfacetedSearch {
 				$currentSortOptions[$name] = array(	"HREFsortAscendingBy" =>  $this->constructQueryURI("sortAscendingBy", $valKey),
 																"HREFsortDescendingBy" =>  $this->constructQueryURI("sortDescendingBy", $valKey) );
 		  }
+		  
+		  //finish up the facet sorting array
+		  $facetSorting = $this->facetSorting;
+		  $facetSorting["HREFfacetTermSort"] = $this->constructQueryURI("facetSort", 1);
+		  $facetSorting["HREFfacetCountSort"] = $this->constructQueryURI("facetSort", null);
+		  $this->facetSorting = $facetSorting;
 		  
 		  $this->currentSortOptions = $currentSortOptions;
 	 }
