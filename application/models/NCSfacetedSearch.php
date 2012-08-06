@@ -114,6 +114,7 @@ class NCSfacetedSearch {
 		  $NCSparams = array();
 		  $NCSparams["verb"] = "Search";
 		  $NCSparams["facet"] = "on";
+		  $NCSparams["facet.maxResults"] = 1000; //return all the facets for a field
 		  
 		  $this->currentPage = 1;
 		  if(isset($requestParams["page"])){
