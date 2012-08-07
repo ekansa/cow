@@ -88,7 +88,9 @@ class NCSfacetedSearch {
 		  "date" => array("display" => "Date", "NCS" => "/key//record/authorshipRightsAccessRestrictions/date") 
 	 );
   
-    
+    public $multiValueParentElements = array("contributor",
+															"organization",
+															"person"); //something of a hack. these are elements that have children but can be repeated
     
     function getBaseURL(){
 		  return self::baseURL;
@@ -264,6 +266,17 @@ class NCSfacetedSearch {
 					 }   
 				}
 				
+				
+				//don't show "holding" items
+				$noHolding = "!dcsstatus:Holding";
+				if(strlen($NCSquery)>1){
+					 $NCSquery .= "+AND+".$noHolding;	 
+				}
+				else{
+					 $NCSquery = "*:*+AND+".$noHolding;
+				}
+				
+				
 				$asnId = false;
 				if(isset($requestParams["asnId"])){
 					 $asnId = true;
@@ -286,7 +299,7 @@ class NCSfacetedSearch {
 						  $NCSquery = urlencode($requestParams["qq"]); //allows key-word searches to be passed to the NCS repository
 					 }
 					 else{
-						  $NCSquery = "(".$NCSquery.") AND ".urlencode($requestParams["qq"]); //add a key-word search to the existing query to be passed to the NCS repository
+						  $NCSquery = "(".$NCSquery.")+AND+(".urlencode($requestParams["qq"]).")"; //add a key-word search to the existing query to be passed to the NCS repository
 					 }
 			  
 					 $NCSrequestURL .= $paramSep."q=".$NCSquery; //add the q parameter to the NCS request
@@ -695,6 +708,7 @@ class NCSfacetedSearch {
     //we need those data to inform us about our search (esp. about if a field has hierarchic paths for values)
     function describeExistingFilters(){
 	
+		  $VocabObj = new CowVocabs; //needed to add display values to facets
 		  $paramConfig = $this->paramConfig; 	//array of standard parameters for querying this service
 		  $requestParams = $this->requestParams;	//requested parameters made by the client's current search
 		  $facets = $this->facets; //array of facets (that may be search parameters for querying this service)
@@ -724,6 +738,16 @@ class NCSfacetedSearch {
 					 $actFilter = array();
 					 $actFilter["parameter"] = $key;
 					 $actFilter["value"] = $value;
+					 
+					 $VocabObj->getVocabTerms($key);
+					 $displayValue = $VocabObj->getDisplayValue($value);
+					 if($displayValue != false){
+						  $actFilter["displayValue"] = $displayValue; //show human friendly display values
+					 }
+					 else{
+						   $actFilter["displayValue"] = $value;
+					 }
+					 
 					 $this->removeValue = $value;
 					 $actFilter["HREFremove"] = $this->constructQueryURI($key, null);
 			  
@@ -742,6 +766,12 @@ class NCSfacetedSearch {
 					 }
 					 else{
 						  $actFilter["hierarchy"] = false;
+						  if(array_key_exists($key, $paramConfig)){
+								$actFilter["displayLabel"] = $paramConfig[$key]["displayLabel"];
+						  }
+						  else{
+								$actFilter["displayLabel"] = "Query parameter - $key - not supported";
+						  }
 					 }
 			  
 					 if($actFilter["hierarchy"] != false){
@@ -865,6 +895,7 @@ class NCSfacetedSearch {
     //outputs a PHP array which can later be expressed as JSON, Atom, etc.
     function queryAgainstSchema($xmlItem, $schemaArray, $singleValue = false){
 	
+		  $multiValueParentElements = $this->multiValueParentElements;
 		  $VocabObj = new CowVocabs; //needed to add display values to facets
 		  
 		  $record = array();
@@ -878,14 +909,21 @@ class NCSfacetedSearch {
 						  }
 						  
 						  if($this->elementValueLimit != false){
-								//$replaceVal = "[text()='".$this->elementValueLimit."']/@";
-								//$subArray["xpath"] = str_replace("/@", $replaceVal, $subArray["xpath"]);
-								$replaceVal = "[".$this->elementValueLimit."]/@";
-								$subArray["xpath"] = str_replace("/@", $replaceVal, $subArray["xpath"]);
+								if(strstr($subArray["xpath"], "/@")){
+									 //make xpath select the right node number for the element of the attribute
+									 $replaceVal = "[".$this->elementValueLimit."]/@";
+									 $subArray["xpath"] = str_replace("/@", $replaceVal, $subArray["xpath"]);
+								}
+								else{
+									 //make xpath select the right node number for the parent element
+									 foreach($multiValueParentElements as $parElement){
+										  $replaceVal = $parElement."[".$this->elementValueLimit."]/";
+										  $subArray["xpath"] = str_replace($parElement."/", $replaceVal, $subArray["xpath"]);
+									 }
+								}
 								//echo $subArray["xpath"];
 						  }
 						  
-					
 						  if($xmlItem->xpath($subArray["xpath"]) && $public){
 								$foundValue = false;
 								$record[$key]["displayLabel"] = $subArray["displayLabel"];
@@ -896,6 +934,7 @@ class NCSfacetedSearch {
 										  $record[$key]["values"][]["value"] = $foundValue; //values can be an array, as when querying XML elements
 									 }
 									 else{
+										  //$record[$key]["xpath"] = $subArray["xpath"];
 										  $record[$key]["value"] = $foundValue; //value not in an array, as XML attribute
 										  $VocabObj->getVocabTerms($key);
 										  $displayValue = $VocabObj->getDisplayValue($foundValue);
@@ -928,8 +967,29 @@ class NCSfacetedSearch {
 						  }
 					 }
 					 else{
-						  $record[$key] = $this->queryAgainstSchema($xmlItem, $subArray["children"]);
-						  //$this->elementValueLimit = false;
+						  
+						  //if(false){
+						  if(in_array($key, $multiValueParentElements)){
+								//$key element can be used multiple times
+								$public = true;
+								if($xmlItem->xpath($subArray["xpath"]) && $public){
+									 $nodeNum = 1;
+									 foreach($xmlItem->xpath($subArray["xpath"]) as $node){
+										  $this->elementValueLimit = $nodeNum;
+										  $record[$key][] = $this->queryAgainstSchema($xmlItem, $subArray["children"], true);
+										  $nodeNum++;
+									 }
+									 $this->elementValueLimit = false;
+								}
+								else{
+									 //$record[$key] = $this->queryAgainstSchema($xmlItem, $subArray["children"]);
+								}
+						  }
+						  else{
+								//$key element used only once
+								$record[$key] = $this->queryAgainstSchema($xmlItem, $subArray["children"]);
+						  }
+						  
 					 }
 				}
 		  }

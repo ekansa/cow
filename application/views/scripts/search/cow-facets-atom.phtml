@@ -313,15 +313,15 @@ if(is_array($NCSobj->results)){
       
       //authors are required for a valid Atom feed. Get author information, or default to an unknown author
       $authors = array();
-      if(isset($actResult["authorshipRightsAccessRestrictions"]["authorContact"]["contributors"]["person"]["nameLast"])){
-			foreach($actResult["authorshipRightsAccessRestrictions"]["authorContact"]["contributors"] as $person){
+      if(isset($actResult["authorshipRightsAccessRestrictions"]["authorContact"]["contributors"]["person"])){
+			foreach($actResult["authorshipRightsAccessRestrictions"]["authorContact"]["contributors"]["person"] as $person){
 				$lastName = false;
 				$firstName = false;
-				if(isset($person["nameLast"]["values"][0]["value"])){
-					$lastName = $person["nameLast"]["values"][0]["value"];
+				if(isset($person["nameLast"]["value"])){
+					$lastName = $person["nameLast"]["value"];
 				}
-				if(isset($person["nameFirst"]["values"][0]["value"])){
-					$firstName = $person["nameFirst"]["values"][0]["value"];
+				if(isset($person["nameFirst"]["value"])){
+					$firstName = $person["nameFirst"]["value"];
 				}
 				if($lastName != false && $firstName != false){
 					$authors[] = $lastName.", ".$firstName;
@@ -338,26 +338,28 @@ if(is_array($NCSobj->results)){
 			}
       }
       elseif(isset($actResult["authorshipRightsAccessRestrictions"]["authorContact"]["contributors"]["contributor"]["contributor"]) || isset($actResult["authorshipRightsAccessRestrictions"]["authorContact"]["contributors"]["contributor"]["organization"])){
-			foreach($actResult["authorshipRightsAccessRestrictions"]["authorContact"]["contributors"]as $contrib){
-				$orgName = false;
-				$deptName = false;
-				if(isset($contrib["organizationName"]["values"][0]["value"])){
-					$orgName = $contrib["organizationName"]["values"][0]["value"];
-				}
-				if(isset($contrib["department"]["values"][0]["value"])){
-					$deptName = $contrib["department"]["values"][0]["value"];
-				}
-				if($orgName != false && $deptName != false){
-					$authors[] = $orgName.", ".$deptName;
-				}
-				elseif($orgName != false && !$deptName){
-					$authors[] = $orgName;
-				}
-				elseif($deptName != false && !$orgName){
-					$authors[] = $deptName;
-				}
-				else{
-					//do nothing
+			foreach($actResult["authorshipRightsAccessRestrictions"]["authorContact"]["contributors"]as $key => $contribArray){
+				foreach($contribArray as $contrib){
+					$orgName = false;
+					$deptName = false;
+					if(isset($contrib["organizationName"]["value"])){
+						$orgName = $contrib["organizationName"]["value"];
+					}
+					if(isset($contrib["department"]["value"])){
+						$deptName = $contrib["department"]["value"];
+					}
+					if($orgName != false && $deptName != false){
+						$authors[] = $orgName.", ".$deptName;
+					}
+					elseif($orgName != false && !$deptName){
+						$authors[] = $orgName;
+					}
+					elseif($deptName != false && !$orgName){
+						$authors[] = $deptName;
+					}
+					else{
+						//do nothing
+					}
 				}
 			}
       }
