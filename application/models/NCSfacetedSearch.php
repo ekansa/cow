@@ -96,6 +96,37 @@ class NCSfacetedSearch {
 		  return self::baseURL;
     }
 
+
+	 //cleans the request parameters of blank values
+	 function requestParameterClean(){
+		  $requestParams = $this->requestParams;
+		  $cleanParams = array();
+		  foreach($requestParams as $paramKey => $paramVals){
+				if(is_array($paramVals)){
+					 //value for the parameter is an array
+					 $cleanVals = array();
+					 foreach($paramVals as $val){
+						  if(strlen($val)>0 && $val != " "){
+								$cleanVals[] = $val;
+						  }
+					 }
+					 if(count($cleanVals)>0){
+						  $cleanParams[$paramKey] = $cleanVals;
+					 }
+				}
+				else{
+					 //value for the parameter is a simple value
+					 if(strlen($paramVals)>0 && $paramVals != " "){
+						  $cleanParams[$paramKey] = $paramVals;
+					 }
+					 
+				}
+				
+		  }
+		  
+		  $this->requestParams = $cleanParams;
+	 }
+
     
     function prepNCSsearch(){
 	
@@ -111,6 +142,7 @@ class NCSfacetedSearch {
 		  //default to only metadata elements marked as public
 		  $this->displayAllResultMetadata = false;
 		  
+		  $this->requestParameterClean(); //clean request parameters of blank values
 		  $requestParams = $this->requestParams;
 		  
 		  $NCSparams = array();
@@ -205,7 +237,7 @@ class NCSfacetedSearch {
 	
 		  $NCSrequestURL .= $paramSep."ky=".self::NCSuserKey; //add the NCS user key for this repository service
 		  $paramSep = "&";
-	
+		
 		  if(is_array($this->schemaToFacetsArray)){
 				
 				$facetsArray = array("authorshipRightsAccessRestrictions" => "",
@@ -250,11 +282,13 @@ class NCSfacetedSearch {
 						  }
 						  
 						  foreach($paramVals as $paramVal){
+								$encodedVal = urlencode($paramVal);
+								$encodedVal = str_replace("%5C%27", "%27", $encodedVal); //fix apostrophe encoding issue
 								$dillDown = true;
 								$NCSrequestURL .= "&f.drilldown.category=".$paramKey;
-								$NCSrequestURL .= "&f.drilldown.".$paramKey.".path=".urlencode($paramVal);
+								$NCSrequestURL .= "&f.drilldown.".$paramKey.".path=".$encodedVal;
 								if($schemaToFacetsArray[$paramKey]["xpath"] != false){
-									 $xpath = "(".$schemaToFacetsArray[$paramKey]["xpath"].":\"".urlencode($paramVal)."\")";
+									 $xpath = "(".$schemaToFacetsArray[$paramKey]["xpath"].":\"".$encodedVal."\")";
 									 if(strlen($NCSquery)<1){
 										  $NCSquery = $xpath;
 									 }
@@ -295,11 +329,14 @@ class NCSfacetedSearch {
 				}
 				elseif(isset($requestParams["qq"])){
 			  
+					 $encodedVal = urlencode($requestParams["qq"]);
+					 $encodedVal = str_replace("%5C%27", "%27", $encodedVal); //fix apostrophe encoding issue
+			  
 					 if($dillDown || strlen($NCSquery)<1){ //if NCSquery is not used yet, no need to wrap the key-word search in a boolean
-						  $NCSquery = urlencode($requestParams["qq"]); //allows key-word searches to be passed to the NCS repository
+						  $NCSquery = $encodedVal; //allows key-word searches to be passed to the NCS repository
 					 }
 					 else{
-						  $NCSquery = "(".$NCSquery.")+AND+(".urlencode($requestParams["qq"]).")"; //add a key-word search to the existing query to be passed to the NCS repository
+						  $NCSquery = "(".$NCSquery.")+AND+(".$encodedVal.")"; //add a key-word search to the existing query to be passed to the NCS repository
 					 }
 			  
 					 $NCSrequestURL .= $paramSep."q=".$NCSquery; //add the q parameter to the NCS request
