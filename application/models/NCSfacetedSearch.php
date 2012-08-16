@@ -85,7 +85,7 @@ class NCSfacetedSearch {
 	 public $sortFields = array(
 		  "title" => array("display" => "Title", "NCS" => "/key//record/general/title"), 
 		  //"url" => array("display" => "URL", "NCS" => "/key//record/general/url"),  
-		  "date" => array("display" => "Date", "NCS" => "/key//record/authorshipRightsAccessRestrictions/date"),
+		  "date" => array("display" => "Date", "NCS" => "/key//record/general/authorshipRightsAccessRestrictions/date"),
 		  "relevance" => array("display" => "Relevance", "NCS" => false)
 	 );
   
