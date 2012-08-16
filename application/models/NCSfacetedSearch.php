@@ -85,7 +85,8 @@ class NCSfacetedSearch {
 	 public $sortFields = array(
 		  "title" => array("display" => "Title", "NCS" => "/key//record/general/title"), 
 		  "url" => array("display" => "URL", "NCS" => "/key//record/general/url"),  
-		  "date" => array("display" => "Date", "NCS" => "/key//record/authorshipRightsAccessRestrictions/date") 
+		  "date" => array("display" => "Date", "NCS" => "/key//record/authorshipRightsAccessRestrictions/date"),
+		  "relevance" => array("display" => "Relevance", "NCS" => false)
 	 );
   
     public $multiValueParentElements = array("contributor",
@@ -181,7 +182,9 @@ class NCSfacetedSearch {
 		  $currentSorting = array();
 		  if(isset($requestParams["sortDescendingBy"])){
 		      if(array_key_exists($requestParams["sortDescendingBy"], $sortFields)){
-					 $NCSparams["sortDescendingBy"] = $sortFields[$requestParams["sortDescendingBy"]]["NCS"];
+					 if($sortFields[$requestParams["sortDescendingBy"]]["NCS"] != false){  //false is for relevance sorting, the default for the service
+						  $NCSparams["sortDescendingBy"] = $sortFields[$requestParams["sortDescendingBy"]]["NCS"];
+					 }
 					 $currentSorting["displayLabel"] = $sortFields[$requestParams["sortDescendingBy"]]["display"];
 					 $currentSorting["order"] = "Descending";
 					 $sorting = true;
@@ -189,7 +192,9 @@ class NCSfacetedSearch {
 		  }
 		  elseif(isset($requestParams["sortAscendingBy"])){
 				if(array_key_exists($requestParams["sortAscendingBy"], $sortFields)){
-					 $NCSparams["sortAscendingBy"] = $sortFields[$requestParams["sortAscendingBy"]]["NCS"];
+					 if($sortFields[$requestParams["sortAscendingBy"]]["NCS"] != false){  //false is for relevance sorting, the default for the service
+						  $NCSparams["sortAscendingBy"] = $sortFields[$requestParams["sortAscendingBy"]]["NCS"];
+					 }
 					 $currentSorting["displayLabel"] = $sortFields[$requestParams["sortAscendingBy"]]["display"];
 					 $currentSorting["order"] = "Ascending";
 					 $sorting = true;
@@ -204,6 +209,12 @@ class NCSfacetedSearch {
 				$NCSparams["sortDescendingBy"] = "/key//general/authorshipRightsAccessRestrictions/date";
 				$currentSorting = array("displayLabel" => "Date", "order" => "Descending");
 		  }
+		  elseif(!$sorting && isset($requestParams["qq"])){
+				unset($NCSparams["sortDescendingBy"]);
+				unset($NCSparams["sortAscendingBy"]);
+				$currentSorting = array("displayLabel" => "Relevance", "order" => "Descending");
+		  }
+		  
 		  $this->currentSorting = $currentSorting;
 		  
 		  $facetSorting = array();
@@ -1079,8 +1090,16 @@ class NCSfacetedSearch {
 		  $currentSortOptions = array();
 		  foreach($sortFields as $valKey => $fieldArray){
 				$name = $fieldArray["display"];
-				$currentSortOptions[$name] = array(	"HREFsortAscendingBy" =>  $this->constructQueryURI("sortAscendingBy", $valKey),
+				if($fieldArray["NCS"] != false){
+					 $currentSortOptions[$name] = array(	"HREFsortAscendingBy" =>  $this->constructQueryURI("sortAscendingBy", $valKey),
 																"HREFsortDescendingBy" =>  $this->constructQueryURI("sortDescendingBy", $valKey) );
+				}
+				else{
+					 //relevance search, only the default sort descending by relevance
+					 $this->removeValue = false;
+					 $currentSortOptions[$name] = array("HREFsortDescendingBy" =>  $this->constructQueryURI("sortDescendingBy", null) );
+					 $this->removeValue = true;
+				}
 		  }
 		  
 		  //finish up the facet sorting array
