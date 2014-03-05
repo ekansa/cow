@@ -119,7 +119,9 @@ $root->appendChild($feedLink);
 $HTMLlink = $HTMLresourceSearchRootURL;
 if(strstr($linkURI, "?")){
 	$linkEx = explode("?", $linkURI);
-	$HTMLlink .= "?".$linkEx[1]; //append the second part of the linkeURI (the part with query parameters to make the HTML link)
+	if(isset($linkEx[1])){
+		$HTMLlink .= "?".$linkEx[1]; //append the second part of the linkeURI (the part with query parameters to make the HTML link)
+	}
 }
 $feedLink = $atomFullDoc->createElement("link");
 $feedLink->setAttribute("rel", "alternate");
