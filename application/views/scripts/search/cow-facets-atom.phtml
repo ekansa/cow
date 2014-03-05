@@ -1,6 +1,6 @@
 <?php
 
-
+$HTMLresourceSearchRootURL = "http://nasawavelength.org/resource-search"; //root URL for resource searches on NASA wavelength
 
 
 // the number of results per page. Note: the actual number of results per page is set in the controller as an argument to the solr query.
@@ -114,6 +114,21 @@ $feedLink = $atomFullDoc->createElement("link");
 $feedLink->setAttribute("rel", "self");
 $feedLink->setAttribute("href", $linkURI);
 $root->appendChild($feedLink);
+
+//feed (alternate) link element for the HTML representation
+$HTMLlink = $HTMLresourceSearchRootURL;
+if(strstr($linkURI, "?")){
+	$linkEx = explode("?", $linkURI);
+	$HTMLlink .= "?".$linkEx[1]; //append the second part of the linkeURI (the part with query parameters to make the HTML link)
+}
+$feedLink = $atomFullDoc->createElement("link");
+$feedLink->setAttribute("rel", "alternate");
+$feedLink->setAttribute("type", "text/html");
+$feedLink->setAttribute("title", "Wavelength Search Results");
+$feedLink->setAttribute("href", $HTMLlink);
+$root->appendChild($feedLink);
+
+
 
 // feed license link element
 $feedLink = $atomFullDoc->createElement("link");
